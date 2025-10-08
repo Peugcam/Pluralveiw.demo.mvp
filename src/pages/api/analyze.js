@@ -81,7 +81,15 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error in analyze API:', error)
-    res.status(500).json({ error: error.message })
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
+    res.status(500).json({
+      error: error.message || 'Unknown error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    })
   }
 }
 
