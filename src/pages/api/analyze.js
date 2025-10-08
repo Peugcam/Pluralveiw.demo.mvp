@@ -103,9 +103,8 @@ async function generatePerspectives(topic) {
     { type: 'progressista', name: 'Progressista', focus: 'mudança social, inovação, justiça e equidade' }
   ]
 
-  const perspectives = []
-
-  for (const pt of perspectiveTypes) {
+  // Gerar todas as perspectivas em paralelo para reduzir tempo de execução
+  const perspectivesPromises = perspectiveTypes.map(async (pt) => {
     const prompt = `Você é um analista especializado em análise de múltiplas perspectivas.
 
 TEMA EXATO A SER ANALISADO: "${topic}"
@@ -138,13 +137,14 @@ RESPONDA APENAS com a análise, SEM título ou introdução.`
       max_tokens: 600
     })
 
-    perspectives.push({
+    return {
       type: pt.type,
       content: completion.choices[0].message.content,
       sources: { generated_by: 'openai-gpt-3.5-turbo' }
-    })
-  }
+    }
+  })
 
+  const perspectives = await Promise.all(perspectivesPromises)
   return perspectives
 }
 
