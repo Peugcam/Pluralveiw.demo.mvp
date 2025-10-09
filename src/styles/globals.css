@@ -3,11 +3,19 @@
 @tailwind utilities;
 
 body {
-  @apply bg-dark text-gray-100;
+  @apply bg-dark text-gray-100 transition-colors duration-300;
+}
+
+html.light body {
+  @apply bg-gray-50 text-gray-900;
 }
 
 .gradient-text {
   @apply bg-gradient-to-r from-white to-primary bg-clip-text text-transparent;
+}
+
+html.light .gradient-text {
+  @apply from-gray-900 to-primary;
 }
 
 @layer utilities {
@@ -31,6 +39,21 @@ body {
     }
   }
 
+  @keyframes progress {
+    from {
+      width: 0%;
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
   .animate-fadeIn {
     animation: fadeIn 0.5s ease-out;
   }
@@ -39,4 +62,61 @@ body {
     animation: slideUp 0.6s ease-out forwards;
     opacity: 0;
   }
+
+  .animate-progress {
+    animation: progress 0.3s ease-out;
+  }
+
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Light theme overrides */
+html.light .bg-dark {
+  @apply bg-white;
+}
+
+html.light .bg-gray-900 {
+  @apply bg-gray-100;
+}
+
+html.light .bg-gray-800\/50,
+html.light .bg-gray-800\/30 {
+  @apply bg-white border-gray-300;
+}
+
+html.light .border-gray-800,
+html.light .border-gray-700 {
+  @apply border-gray-300;
+}
+
+html.light .text-gray-100,
+html.light .text-gray-300,
+html.light .text-gray-400,
+html.light .text-gray-500 {
+  @apply text-gray-700;
+}
+
+html.light .text-white {
+  @apply text-gray-900;
+}
+
+html.light .hover\:border-gray-600:hover {
+  @apply border-gray-400;
+}
+
+html.light .bg-gray-700 {
+  @apply bg-gray-200;
+}
+
+html.light .hover\:bg-gray-600:hover {
+  @apply bg-gray-300;
 }

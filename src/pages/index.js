@@ -8,7 +8,20 @@ export default function Home() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [copiedIndex, setCopiedIndex] = useState(null)
+  const [theme, setTheme] = useState('dark')
+  const [history, setHistory] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [progress, setProgress] = useState(0)
   const textareaRef = useRef(null)
+
+  const suggestedTopics = [
+    'Inteligência Artificial na educação',
+    'Energia renovável no Brasil',
+    'Trabalho remoto vs presencial',
+    'Redes sociais e saúde mental',
+    'Criptomoedas como investimento',
+    'Mudanças climáticas'
+  ]
 
   const handleAnalyze = async (e) => {
     e.preventDefault()
@@ -16,8 +29,17 @@ export default function Home() {
     setError(null)
     setResult(null)
     setCopiedIndex(null)
+    setProgress(0)
 
     try {
+      // Simular progresso
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 90) return prev
+          return prev + 10
+        })
+      }, 800)
+
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,15 +48,31 @@ export default function Home() {
 
       const data = await response.json()
 
+      clearInterval(progressInterval)
+      setProgress(100)
+
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao analisar')
       }
 
       setResult(data)
+
+      // Salvar no histórico
+      saveToHistory({
+        topic,
+        date: new Date().toISOString(),
+        perspectives: data.perspectives,
+        questions: data.questions
+      })
+
     } catch (err) {
       setError(err.message)
+      setProgress(0)
     } finally {
-      setLoading(false)
+      setTimeout(() => {
+        setLoading(false)
+        setProgress(0)
+      }, 500)
     }
   }
 
@@ -124,9 +162,65 @@ export default function Home() {
     }
   }
 
+  const saveToHistory = (analysis) => {
+    const existing = JSON.parse(localStorage.getItem('pluralview_history') || '[]')
+    const updated = [analysis, ...existing].slice(0, 10) // Manter apenas as 10 últimas
+    localStorage.setItem('pluralview_history', JSON.stringify(updated))
+    setHistory(updated)
+  }
+
+  const loadHistory = () => {
+    const stored = JSON.parse(localStorage.getItem('pluralview_history') || '[]')
+    setHistory(stored)
+  }
+
+  const loadFromHistory = (item) => {
+    setTopic(item.topic)
+    setResult({
+      perspectives: item.perspectives,
+      questions: item.questions
+    })
+    setShowHistory(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const clearHistory = () => {
+    localStorage.removeItem('pluralview_history')
+    setHistory([])
+    setShowHistory(false)
+  }
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    localStorage.setItem('pluralview_theme', newTheme)
+    document.documentElement.classList.toggle('light', newTheme === 'light')
+  }
+
+  const handleNewAnalysis = () => {
+    setTopic('')
+    setResult(null)
+    setError(null)
+    textareaRef.current?.focus()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const selectSuggestedTopic = (suggestedTopic) => {
+    setTopic(suggestedTopic)
+    textareaRef.current?.focus()
+  }
+
   useEffect(() => {
     // Focus textarea on mount
     textareaRef.current?.focus()
+
+    // Load theme
+    const savedTheme = localStorage.getItem('pluralview_theme') || 'dark'
+    setTheme(savedTheme)
+    document.documentElement.classList.toggle('light', savedTheme === 'light')
+
+    // Load history
+    loadHistory()
   }, [])
 
   return (
@@ -150,14 +244,124 @@ export default function Home() {
         {/* Header */}
         <header className="border-b border-gray-800 bg-dark/80 backdrop-blur-sm sticky top-0 z-50 transition-all duration-300">
           <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
-            <h1 className="text-2xl sm:text-3xl font-bold gradient-text hover:scale-105 transition-transform duration-200 inline-block cursor-default">
-              PluralView
-            </h1>
-            <p className="text-sm sm:text-base text-gray-400 mt-1 sm:mt-2">
-              Análise inteligente de múltiplas perspectivas
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold gradient-text hover:scale-105 transition-transform duration-200 inline-block cursor-default">
+                  PluralView
+                </h1>
+                <p className="text-sm sm:text-base text-gray-400 mt-1 sm:mt-2">
+                  Análise inteligente de múltiplas perspectivas
+                </p>
+              </div>
+
+              {/* Header Actions */}
+              <div className="flex items-center gap-2">
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700 transition-all duration-200"
+                  title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+                >
+                  {theme === 'dark' ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* History Button */}
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="relative p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700 transition-all duration-200"
+                  title="Histórico"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {history.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full text-xs flex items-center justify-center text-white">
+                      {history.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* New Analysis Button */}
+                {result && (
+                  <button
+                    onClick={handleNewAnalysis}
+                    className="px-3 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white transition-all duration-200 text-sm font-medium hidden sm:flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nova Análise
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </header>
+
+        {/* History Panel */}
+        {showHistory && (
+          <div className="fixed inset-0 bg-black/50 z-40 animate-fadeIn" onClick={() => setShowHistory(false)}>
+            <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-dark border-l border-gray-800 p-6 overflow-y-auto animate-slideIn" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold">Histórico</h3>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="p-2 hover:bg-gray-800 rounded-lg transition-all"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {history.length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>Nenhuma análise no histórico</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {history.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-primary/50 cursor-pointer transition-all duration-200"
+                        onClick={() => loadFromHistory(item)}
+                      >
+                        <p className="font-medium text-sm mb-1 line-clamp-2">{item.topic}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(item.date).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={clearHistory}
+                    className="mt-4 w-full py-2 text-sm text-red-400 hover:bg-red-900/20 rounded-lg transition-all"
+                  >
+                    Limpar Histórico
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl">
@@ -166,6 +370,26 @@ export default function Home() {
             <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
               Qual tema você quer analisar?
             </h2>
+
+            {/* Suggested Topics */}
+            {!result && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-400 mb-2">💡 Sugestões:</p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedTopics.map((sugTopic, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => selectSuggestedTopic(sugTopic)}
+                      className="px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-700 rounded-full transition-all duration-200 hover:scale-105"
+                    >
+                      {sugTopic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleAnalyze}>
               <div className="relative">
                 <textarea
@@ -197,6 +421,22 @@ export default function Home() {
                   </span>
                 ) : 'Analisar Perspectivas'}
               </button>
+
+              {/* Progress Bar */}
+              {loading && progress > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span>Gerando perspectivas...</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </form>
 
             {error && (
