@@ -121,26 +121,72 @@ INSTRUÇÕES IMPORTANTES:
 
 RESPONDA APENAS com a análise, SEM título ou introdução.`
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'Você é um analista imparcial especializado em fornecer análises focadas e objetivas sobre temas específicos. Você sempre mantém o foco estrito no tema solicitado.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.5,
-      max_tokens: 600
-    })
+    const sourcesPrompt = `Para o tema "${topic}" na perspectiva ${pt.name}, sugira 3-4 fontes relevantes de diferentes tipos:
+
+1. Site institucional (governo, ONG, instituição)
+2. Artigo acadêmico ou site educacional
+3. Vídeo do YouTube sobre o tema
+4. Artigo de mídia tradicional
+
+Retorne em formato JSON:
+{
+  "sources": [
+    {"type": "institucional", "title": "título curto", "url": "URL real e específica"},
+    {"type": "academico", "title": "título curto", "url": "URL real e específica"},
+    {"type": "video", "title": "título curto", "url": "URL real de vídeo YouTube"},
+    {"type": "midia", "title": "título curto", "url": "URL real de notícia"}
+  ]
+}
+
+IMPORTANTE: URLs devem ser REAIS, relevantes e específicas para "${topic}". Não invente URLs.`
+
+    const [contentCompletion, sourcesCompletion] = await Promise.all([
+      openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um analista imparcial especializado em fornecer análises focadas e objetivas sobre temas específicos.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.5,
+        max_tokens: 600
+      }),
+      openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um assistente que sugere fontes relevantes e reais sobre temas específicos. Sempre retorne JSON válido.'
+          },
+          {
+            role: 'user',
+            content: sourcesPrompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 400
+      })
+    ])
+
+    let sources = []
+    try {
+      const sourcesText = sourcesCompletion.choices[0].message.content
+      const parsed = JSON.parse(sourcesText)
+      sources = parsed.sources || []
+    } catch (e) {
+      console.error('Error parsing sources:', e)
+      sources = []
+    }
 
     return {
       type: pt.type,
-      content: completion.choices[0].message.content,
-      sources: { generated_by: 'openai-gpt-3.5-turbo' }
+      content: contentCompletion.choices[0].message.content,
+      sources: sources
     }
   })
 
