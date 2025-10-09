@@ -37,9 +37,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-dark to-gray-900">
       {/* Header */}
-      <header className="border-b border-gray-800 bg-dark/80 backdrop-blur-sm">
+      <header className="border-b border-gray-800 bg-dark/80 backdrop-blur-sm sticky top-0 z-50 transition-all duration-300">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold gradient-text">
+          <h1 className="text-3xl font-bold gradient-text hover:scale-105 transition-transform duration-200 inline-block cursor-default">
             PluralView
           </h1>
           <p className="text-gray-400 mt-2">
@@ -51,7 +51,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Input Form */}
-        <div className="bg-gray-800/50 rounded-lg p-8 border border-gray-700 backdrop-blur-sm">
+        <div className="bg-gray-800/50 rounded-lg p-8 border border-gray-700 backdrop-blur-sm hover:border-gray-600 transition-all duration-300">
           <h2 className="text-2xl font-bold mb-4">
             Qual tema você quer analisar?
           </h2>
@@ -60,21 +60,29 @@ export default function Home() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="Ex: Inteligência Artificial na educação, Energia renovável no Brasil, etc."
-              className="w-full p-4 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full p-4 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50 hover:border-gray-600 transition-all duration-200"
               rows={4}
               required
             />
             <button
               type="submit"
               disabled={loading || !topic.trim()}
-              className="mt-4 w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="mt-4 w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200"
             >
-              {loading ? 'Analisando...' : 'Analisar Perspectivas'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Analisando...
+                </span>
+              ) : 'Analisar Perspectivas'}
             </button>
           </form>
 
           {error && (
-            <div className="mt-4 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
+            <div className="mt-4 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200 animate-fadeIn">
               ⚠️ {error}
             </div>
           )}
@@ -82,7 +90,7 @@ export default function Home() {
 
         {/* Results */}
         {result && (
-          <div className="mt-8 space-y-6">
+          <div className="mt-8 space-y-6 animate-fadeIn">
             <h3 className="text-2xl font-bold">Análise Completa</h3>
 
             {/* Perspectives */}
@@ -90,7 +98,8 @@ export default function Home() {
               {result.perspectives.map((p, idx) => (
                 <div
                   key={idx}
-                  className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 backdrop-blur-sm"
+                  className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 backdrop-blur-sm hover:border-primary/50 hover:scale-[1.02] transition-all duration-300 animate-slideUp"
+                  style={{ animationDelay: `${idx * 100}ms` }}
                 >
                   <h4 className="text-lg font-semibold text-primary mb-3 capitalize">
                     📊 Perspectiva {p.type}
@@ -104,7 +113,7 @@ export default function Home() {
 
             {/* Reflective Questions */}
             {result.questions && result.questions.length > 0 && (
-              <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-6 border border-primary/30">
+              <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-6 border border-primary/30 hover:border-primary/50 transition-all duration-300 animate-slideUp" style={{ animationDelay: `${result.perspectives.length * 100}ms` }}>
                 <h4 className="text-lg font-semibold mb-4">
                   💭 Perguntas para Reflexão
                 </h4>
