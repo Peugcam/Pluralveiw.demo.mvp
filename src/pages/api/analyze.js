@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
+import { tavily } from '@tavily/core'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -9,6 +10,8 @@ const supabase = createClient(
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY })
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -93,6 +96,98 @@ export default async function handler(req, res) {
   }
 }
 
+async function searchRealSources(topic, perspectiveName) {
+  try {
+    // Fazer busca real na web sobre o tema
+    const searchQuery = `${topic} ${perspectiveName}`
+    const searchResult = await tavilyClient.search(searchQuery, {
+      maxResults: 8,
+      includeAnswer: false,
+      includeRawContent: false
+    })
+
+    const results = searchResult.results || []
+
+    // Categorizar resultados por tipo de domínio
+    const categorizedSources = {
+      institucional: [],
+      academico: [],
+      video: [],
+      midia: []
+    }
+
+    results.forEach(result => {
+      const url = result.url.toLowerCase()
+      const source = {
+        title: result.title,
+        url: result.url,
+        content: result.content
+      }
+
+      // Institucional: gov, org, instituições
+      if (url.includes('.gov') || url.includes('.org') || url.includes('governo') || url.includes('institution')) {
+        categorizedSources.institucional.push(source)
+      }
+      // Acadêmico: edu, scielo, scholar, universidades
+      else if (url.includes('.edu') || url.includes('scholar') || url.includes('scielo') || url.includes('universidade') || url.includes('academic')) {
+        categorizedSources.academico.push(source)
+      }
+      // Vídeo: YouTube
+      else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        categorizedSources.video.push(source)
+      }
+      // Mídia: jornais, revistas, blogs de notícias
+      else {
+        categorizedSources.midia.push(source)
+      }
+    })
+
+    // Selecionar 1 de cada tipo (ou o que estiver disponível)
+    const finalSources = []
+
+    if (categorizedSources.institucional.length > 0) {
+      const s = categorizedSources.institucional[0]
+      finalSources.push({ type: 'institucional', title: s.title, url: s.url })
+    }
+
+    if (categorizedSources.academico.length > 0) {
+      const s = categorizedSources.academico[0]
+      finalSources.push({ type: 'academico', title: s.title, url: s.url })
+    }
+
+    if (categorizedSources.video.length > 0) {
+      const s = categorizedSources.video[0]
+      finalSources.push({ type: 'video', title: s.title, url: s.url })
+    }
+
+    if (categorizedSources.midia.length > 0) {
+      const s = categorizedSources.midia[0]
+      finalSources.push({ type: 'midia', title: s.title, url: s.url })
+    }
+
+    // Se não conseguiu pelo menos 3 fontes, pegar os primeiros resultados
+    if (finalSources.length < 3 && results.length > 0) {
+      const remaining = results.slice(0, 4 - finalSources.length)
+      remaining.forEach(r => {
+        finalSources.push({
+          type: 'midia',
+          title: r.title,
+          url: r.url
+        })
+      })
+    }
+
+    return {
+      sources: finalSources,
+      searchContext: results.slice(0, 3).map(r => r.content).join('\n\n')
+    }
+
+  } catch (error) {
+    console.error('Error searching sources:', error)
+    return { sources: [], searchContext: '' }
+  }
+}
+
 async function generatePerspectives(topic) {
   const perspectiveTypes = [
     { type: 'tecnica', name: 'Técnica', focus: 'aspectos técnicos, dados, evidências científicas' },
@@ -103,8 +198,12 @@ async function generatePerspectives(topic) {
     { type: 'progressista', name: 'Progressista', focus: 'mudança social, inovação, justiça e equidade' }
   ]
 
-  // Gerar todas as perspectivas em paralelo para reduzir tempo de execução
+  // Gerar todas as perspectivas em paralelo
   const perspectivesPromises = perspectiveTypes.map(async (pt) => {
+    // Buscar fontes reais na web
+    const { sources, searchContext } = await searchRealSources(topic, pt.name)
+
+    // Gerar análise baseada no conteúdo real encontrado
     const prompt = `Você é um analista especializado em análise de múltiplas perspectivas.
 
 TEMA EXATO A SER ANALISADO: "${topic}"
@@ -112,76 +211,34 @@ TEMA EXATO A SER ANALISADO: "${topic}"
 PERSPECTIVA A ANALISAR: ${pt.name}
 FOCO: ${pt.focus}
 
+CONTEXTO DE FONTES REAIS ENCONTRADAS:
+${searchContext || 'Nenhum contexto específico encontrado. Use seu conhecimento geral.'}
+
 INSTRUÇÕES IMPORTANTES:
 - Mantenha o foco EXCLUSIVAMENTE no tema "${topic}"
 - NÃO fuja do tema ou faça generalizações amplas
 - Seja específico sobre "${topic}" sob a perspectiva ${pt.name}
 - Cite exemplos DIRETAMENTE relacionados a "${topic}"
 - Escreva 2-3 parágrafos focados
+- Se o contexto acima tiver informações relevantes, considere-as na análise
 
 RESPONDA APENAS com a análise, SEM título ou introdução.`
 
-    const sourcesPrompt = `Para o tema "${topic}" na perspectiva ${pt.name}, sugira 3-4 fontes relevantes de diferentes tipos:
-
-1. Site institucional (governo, ONG, instituição)
-2. Artigo acadêmico ou site educacional
-3. Vídeo do YouTube sobre o tema
-4. Artigo de mídia tradicional
-
-Retorne em formato JSON:
-{
-  "sources": [
-    {"type": "institucional", "title": "título curto", "url": "URL real e específica"},
-    {"type": "academico", "title": "título curto", "url": "URL real e específica"},
-    {"type": "video", "title": "título curto", "url": "URL real de vídeo YouTube"},
-    {"type": "midia", "title": "título curto", "url": "URL real de notícia"}
-  ]
-}
-
-IMPORTANTE: URLs devem ser REAIS, relevantes e específicas para "${topic}". Não invente URLs.`
-
-    const [contentCompletion, sourcesCompletion] = await Promise.all([
-      openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um analista imparcial especializado em fornecer análises focadas e objetivas sobre temas específicos.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.5,
-        max_tokens: 600
-      }),
-      openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um assistente que sugere fontes relevantes e reais sobre temas específicos. Sempre retorne JSON válido.'
-          },
-          {
-            role: 'user',
-            content: sourcesPrompt
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 400
-      })
-    ])
-
-    let sources = []
-    try {
-      const sourcesText = sourcesCompletion.choices[0].message.content
-      const parsed = JSON.parse(sourcesText)
-      sources = parsed.sources || []
-    } catch (e) {
-      console.error('Error parsing sources:', e)
-      sources = []
-    }
+    const contentCompletion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'Você é um analista imparcial especializado em fornecer análises focadas e objetivas sobre temas específicos.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.5,
+      max_tokens: 600
+    })
 
     return {
       type: pt.type,
