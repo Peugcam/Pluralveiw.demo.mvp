@@ -29,16 +29,29 @@ CREATE TABLE IF NOT EXISTS reflective_questions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
+-- Tabela de feedback de fontes (para melhorar o sistema)
+CREATE TABLE IF NOT EXISTS source_feedback (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  analysis_id UUID REFERENCES analyses(id) ON DELETE CASCADE,
+  perspective_type VARCHAR(50) NOT NULL,
+  source_url TEXT NOT NULL,
+  feedback VARCHAR(20) NOT NULL CHECK (feedback IN ('relevant', 'not_relevant')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
 -- Índices para performance
 CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_perspectives_analysis_id ON perspectives(analysis_id);
 CREATE INDEX IF NOT EXISTS idx_questions_analysis_id ON reflective_questions(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_source_feedback_analysis_id ON source_feedback(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_source_feedback_created_at ON source_feedback(created_at DESC);
 
 -- Row Level Security (RLS)
 ALTER TABLE analyses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE perspectives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reflective_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE source_feedback ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de acesso
 CREATE POLICY "Users can view own analyses"
@@ -86,6 +99,15 @@ CREATE POLICY "Users can view questions of own analyses"
 CREATE POLICY "Service can insert questions"
   ON reflective_questions FOR INSERT
   WITH CHECK (true); -- API serverless vai inserir
+
+-- Políticas para source_feedback
+CREATE POLICY "Anyone can insert feedback"
+  ON source_feedback FOR INSERT
+  WITH CHECK (true); -- Permitir feedback anônimo para MVP
+
+CREATE POLICY "Service can view all feedback"
+  ON source_feedback FOR SELECT
+  USING (true); -- Para análise de qualidade
 
 -- Function para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()

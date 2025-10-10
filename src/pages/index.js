@@ -13,6 +13,7 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false)
   const [progress, setProgress] = useState(0)
   const textareaRef = useRef(null)
+  const [sourceFeedback, setSourceFeedback] = useState({})
 
   const suggestedTopics = [
     'Inteligência Artificial na educação',
@@ -208,6 +209,34 @@ export default function Home() {
   const selectSuggestedTopic = (suggestedTopic) => {
     setTopic(suggestedTopic)
     textareaRef.current?.focus()
+  }
+
+  const handleSourceFeedback = async (perspectiveType, sourceUrl, feedback) => {
+    try {
+      const feedbackKey = `${perspectiveType}-${sourceUrl}`
+
+      // Atualizar UI imediatamente
+      setSourceFeedback(prev => ({
+        ...prev,
+        [feedbackKey]: feedback
+      }))
+
+      // Enviar para API
+      await fetch('/api/feedback-source', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          analysisId: result.analysisId,
+          perspectiveType,
+          sourceUrl,
+          feedback
+        })
+      })
+
+      console.log(`Feedback enviado: ${feedback} para ${sourceUrl}`)
+    } catch (err) {
+      console.error('Erro ao enviar feedback:', err)
+    }
   }
 
   useEffect(() => {
@@ -492,16 +521,26 @@ export default function Home() {
                     {/* Sources */}
                     {p.sources && p.sources.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-700">
-                        <p className="text-sm font-semibold text-gray-400 mb-3">📚 Fontes e Referências:</p>
+                        <p className="text-sm font-semibold text-gray-400 mb-3">
+                          📚 Fontes e Referências
+                          <span className="ml-2 text-xs text-gray-500">(avalie a relevância)</span>
+                        </p>
                         <div className="space-y-2">
-                          {p.sources.map((source, sIdx) => (
-                            <a
+                          {p.sources.map((source, sIdx) => {
+                            const feedbackKey = `${p.type}-${source.url}`
+                            const currentFeedback = sourceFeedback[feedbackKey]
+
+                            return (
+                            <div
                               key={sIdx}
-                              href={source.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
                               className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-700/30 transition-all duration-200 group"
                             >
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-start gap-2 flex-1"
+                              >
                               {/* Icon based on type */}
                               <div className="flex-shrink-0 mt-0.5">
                                 {source.type === 'institucional' && (
@@ -538,8 +577,39 @@ export default function Home() {
                               <svg className="w-4 h-4 text-gray-500 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
-                            </a>
-                          ))}
+                              </a>
+
+                              {/* Feedback buttons */}
+                              <div className="flex gap-1 ml-2">
+                                <button
+                                  onClick={() => handleSourceFeedback(p.type, source.url, 'relevant')}
+                                  className={`p-1 rounded transition-all ${
+                                    currentFeedback === 'relevant'
+                                      ? 'bg-green-600 text-white'
+                                      : 'bg-gray-700 text-gray-400 hover:bg-green-700 hover:text-white'
+                                  }`}
+                                  title="Fonte relevante"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleSourceFeedback(p.type, source.url, 'not_relevant')}
+                                  className={`p-1 rounded transition-all ${
+                                    currentFeedback === 'not_relevant'
+                                      ? 'bg-red-600 text-white'
+                                      : 'bg-gray-700 text-gray-400 hover:bg-red-700 hover:text-white'
+                                  }`}
+                                  title="Fonte não relevante"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          )})}
                         </div>
                       </div>
                     )}

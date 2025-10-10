@@ -13,6 +13,25 @@ const openai = new OpenAI({
 
 const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY })
 
+// Cache em memória para buscas similares (15 minutos de TTL)
+const searchCache = new Map()
+const CACHE_TTL = 15 * 60 * 1000 // 15 minutos
+
+// Função para gerar chave de cache
+function getCacheKey(topic, perspectiveName, perspectiveFocus) {
+  return `${topic.toLowerCase().trim()}:${perspectiveName}:${perspectiveFocus}`.replace(/\s+/g, '_')
+}
+
+// Função para limpar cache expirado
+function cleanExpiredCache() {
+  const now = Date.now()
+  for (const [key, value] of searchCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL) {
+      searchCache.delete(key)
+    }
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -96,19 +115,75 @@ export default async function handler(req, res) {
   }
 }
 
-async function searchRealSources(topic, perspectiveName) {
+// Função para filtrar fontes relevantes usando IA
+async function filterRelevantSources(sources, topic, perspectiveFocus) {
   try {
-    // Fazer busca real na web sobre o tema
-    const searchQuery = `${topic} ${perspectiveName}`
+    // Filtrar fontes em lote para economia de tokens
+    const sourcesText = sources.map((s, idx) =>
+      `[${idx}] Título: ${s.title}\nConteúdo: ${s.content.substring(0, 300)}...`
+    ).join('\n\n')
+
+    const prompt = `Analise quais das seguintes fontes são RELEVANTES para uma análise sobre "${topic}" com foco em "${perspectiveFocus}".
+
+FONTES:
+${sourcesText}
+
+Responda APENAS com os números das fontes relevantes separados por vírgula (ex: 0,2,4).
+Se nenhuma for relevante, responda "nenhuma".`
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0,
+      max_tokens: 50
+    })
+
+    const relevantIndices = response.choices[0].message.content.trim().toLowerCase()
+
+    if (relevantIndices === 'nenhuma') {
+      return sources.slice(0, 3) // Retornar as 3 primeiras se nenhuma for considerada relevante
+    }
+
+    const indices = relevantIndices.split(',').map(i => parseInt(i.trim())).filter(i => !isNaN(i))
+    return indices.map(i => sources[i]).filter(Boolean)
+  } catch (error) {
+    console.error('Error filtering relevant sources:', error)
+    return sources.slice(0, 6) // Em caso de erro, retornar as primeiras
+  }
+}
+
+async function searchRealSources(topic, perspectiveName, perspectiveFocus) {
+  try {
+    // Verificar cache primeiro
+    const cacheKey = getCacheKey(topic, perspectiveName, perspectiveFocus)
+    const cached = searchCache.get(cacheKey)
+
+    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+      console.log(`[Cache HIT] ${perspectiveName} - usando resultados em cache`)
+      return cached.data
+    }
+
+    console.log(`[Cache MISS] ${perspectiveName} - buscando na web`)
+
+    // Limpar cache expirado periodicamente
+    if (searchCache.size > 50) {
+      cleanExpiredCache()
+    }
+
+    // Fazer busca real na web sobre o tema, incluindo o foco da perspectiva para maior precisão
+    const searchQuery = `${topic} ${perspectiveName} ${perspectiveFocus}`
     const searchResult = await tavilyClient.search(searchQuery, {
-      maxResults: 8,
+      maxResults: 10,
       includeAnswer: false,
       includeRawContent: false
     })
 
     const results = searchResult.results || []
 
-    // Categorizar resultados por tipo de domínio
+    // Filtrar fontes relevantes usando IA
+    const relevantResults = await filterRelevantSources(results, topic, perspectiveFocus)
+
+    // Categorizar resultados relevantes por tipo de domínio
     const categorizedSources = {
       institucional: [],
       academico: [],
@@ -116,7 +191,7 @@ async function searchRealSources(topic, perspectiveName) {
       midia: []
     }
 
-    results.forEach(result => {
+    relevantResults.forEach(result => {
       const url = result.url.toLowerCase()
       const source = {
         title: result.title,
@@ -165,9 +240,9 @@ async function searchRealSources(topic, perspectiveName) {
       finalSources.push({ type: 'midia', title: s.title, url: s.url })
     }
 
-    // Se não conseguiu pelo menos 3 fontes, pegar os primeiros resultados
-    if (finalSources.length < 3 && results.length > 0) {
-      const remaining = results.slice(0, 4 - finalSources.length)
+    // Se não conseguiu pelo menos 3 fontes, pegar os primeiros resultados relevantes
+    if (finalSources.length < 3 && relevantResults.length > 0) {
+      const remaining = relevantResults.slice(0, 4 - finalSources.length)
       remaining.forEach(r => {
         finalSources.push({
           type: 'midia',
@@ -177,14 +252,81 @@ async function searchRealSources(topic, perspectiveName) {
       })
     }
 
-    return {
+    // Aumentar contexto com mais fontes relevantes e informações estruturadas
+    const contextSources = relevantResults.slice(0, 6).map(r => ({
+      title: r.title,
+      content: r.content,
+      url: r.url
+    }))
+
+    const searchContext = contextSources
+      .map(r => `📄 Fonte: ${r.title}\nURL: ${r.url}\nConteúdo: ${r.content}`)
+      .join('\n\n---\n\n')
+
+    const result = {
       sources: finalSources,
-      searchContext: results.slice(0, 3).map(r => r.content).join('\n\n')
+      searchContext: searchContext
     }
+
+    // Salvar no cache
+    searchCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    })
+
+    console.log(`[Cache SAVE] ${perspectiveName} - resultados salvos no cache`)
+
+    return result
 
   } catch (error) {
     console.error('Error searching sources:', error)
     return { sources: [], searchContext: '' }
+  }
+}
+
+// Função para validar alinhamento entre conteúdo gerado e fontes
+async function validateSourceAlignment(content, sources, topic) {
+  try {
+    if (!sources || sources.length === 0) {
+      return { aligned: true, score: 100, needsImprovement: false }
+    }
+
+    const sourceTitles = sources.map(s => s.title).join('\n')
+
+    const prompt = `Analise se o texto abaixo está alinhado e cita/referencia as fontes fornecidas.
+
+TEXTO GERADO:
+${content}
+
+FONTES DISPONÍVEIS:
+${sourceTitles}
+
+AVALIE:
+1. O texto menciona ou cita informações das fontes?
+2. As fontes são relevantes para o que foi escrito?
+3. Score de alinhamento (0-100)
+
+Responda APENAS em formato JSON:
+{"aligned": true/false, "score": 0-100, "reason": "breve explicação"}`
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0,
+      max_tokens: 150
+    })
+
+    const result = JSON.parse(response.choices[0].message.content)
+
+    return {
+      aligned: result.score >= 60,
+      score: result.score,
+      reason: result.reason,
+      needsImprovement: result.score < 60
+    }
+  } catch (error) {
+    console.error('Error validating source alignment:', error)
+    return { aligned: true, score: 100, needsImprovement: false } // Em caso de erro, prosseguir
   }
 }
 
@@ -200,8 +342,8 @@ async function generatePerspectives(topic) {
 
   // Gerar todas as perspectivas em paralelo
   const perspectivesPromises = perspectiveTypes.map(async (pt) => {
-    // Buscar fontes reais na web
-    const { sources, searchContext } = await searchRealSources(topic, pt.name)
+    // Buscar fontes reais na web, passando o foco para busca mais precisa
+    const { sources, searchContext } = await searchRealSources(topic, pt.name, pt.focus)
 
     // Gerar análise baseada no conteúdo real encontrado
     const prompt = `Você é um analista especializado em análise de múltiplas perspectivas.
@@ -218,9 +360,16 @@ INSTRUÇÕES IMPORTANTES:
 - Mantenha o foco EXCLUSIVAMENTE no tema "${topic}"
 - NÃO fuja do tema ou faça generalizações amplas
 - Seja específico sobre "${topic}" sob a perspectiva ${pt.name}
-- Cite exemplos DIRETAMENTE relacionados a "${topic}"
-- Escreva 2-3 parágrafos focados
-- Se o contexto acima tiver informações relevantes, considere-as na análise
+- **CITE EXPLICITAMENTE as fontes fornecidas acima quando relevantes**
+- Use expressões como: "Segundo [fonte]...", "Estudos indicam que...", "De acordo com...", "Dados mostram que..."
+- Integre naturalmente informações e dados das fontes no texto
+- Se mencionar um dado ou fato específico, referencie a fonte de onde veio
+- Escreva 2-3 parágrafos focados e bem fundamentados
+- Priorize informações das fontes fornecidas sobre conhecimento geral
+
+FORMATO DE CITAÇÃO:
+- Use citações naturais integradas ao texto (não use numeração ou lista de referências)
+- Exemplo: "Estudos recentes demonstram que..." ou "Segundo análise da [instituição]..."
 
 RESPONDA APENAS com a análise, SEM título ou introdução.`
 
@@ -240,10 +389,24 @@ RESPONDA APENAS com a análise, SEM título ou introdução.`
       max_tokens: 600
     })
 
+    const generatedContent = contentCompletion.choices[0].message.content
+
+    // Validar alinhamento entre conteúdo e fontes
+    const validation = await validateSourceAlignment(generatedContent, sources, topic)
+
+    // Log para monitoramento de qualidade
+    console.log(`[${pt.name}] Alinhamento: ${validation.score}/100 - ${validation.reason || 'OK'}`)
+
+    // Se o alinhamento for muito baixo, adicionar aviso no log (mas não bloquear)
+    if (validation.needsImprovement) {
+      console.warn(`[${pt.name}] ⚠️ Baixo alinhamento com fontes. Considere revisar.`)
+    }
+
     return {
       type: pt.type,
-      content: contentCompletion.choices[0].message.content,
-      sources: sources
+      content: generatedContent,
+      sources: sources,
+      alignmentScore: validation.score // Adicionar score para análise futura
     }
   })
 
