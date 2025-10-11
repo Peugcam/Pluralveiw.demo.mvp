@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { tavily } from '@tavily/core'
 import { temporalDetector } from '../../lib/temporalDetector'
+import { trustScoreCalculator } from '../../lib/trustScoreCalculator'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -75,6 +76,8 @@ export default async function handler(req, res) {
       type: p.type,
       content: p.content,
       sources: p.sources
+      // Note: biases não são salvos no banco (campo não existe ainda)
+      // mas são retornados na resposta da API
     }))
 
     const { error: perspectivesError } = await supabase
@@ -245,10 +248,25 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus, tempo
 
     relevantResults.forEach(result => {
       const url = result.url.toLowerCase()
+
+      // 🎯 CALCULAR TRUST SCORE
+      const trustScoreData = trustScoreCalculator.calculate({
+        url: result.url,
+        title: result.title,
+        content: result.content,
+        published_date: result.published_date || result.publishedDate,
+        author: result.author
+      })
+
       const source = {
         title: result.title,
         url: result.url,
-        content: result.content
+        content: result.content,
+        // Adicionar dados de Trust Score
+        trustScore: trustScoreData.score,
+        trustLevel: trustScoreData.level,
+        trustFactors: trustScoreData.factors,
+        trustDetails: trustScoreData.details
       }
 
       // Institucional: gov, org, instituições
@@ -270,39 +288,107 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus, tempo
     })
 
     // Selecionar 1 de cada tipo (ou o que estiver disponível)
+    // 🎯 PRIORIZAR FONTES COM MAIOR TRUST SCORE
     const finalSources = []
+
+    // Ordenar cada categoria por trust score
+    Object.keys(categorizedSources).forEach(category => {
+      categorizedSources[category].sort((a, b) => b.trustScore - a.trustScore)
+    })
 
     if (categorizedSources.institucional.length > 0) {
       const s = categorizedSources.institucional[0]
-      finalSources.push({ type: 'institucional', title: s.title, url: s.url })
+      finalSources.push({
+        type: 'institucional',
+        title: s.title,
+        url: s.url,
+        trustScore: s.trustScore,
+        trustLevel: s.trustLevel,
+        trustFactors: s.trustFactors,
+        trustDetails: s.trustDetails
+      })
     }
 
     if (categorizedSources.academico.length > 0) {
       const s = categorizedSources.academico[0]
-      finalSources.push({ type: 'academico', title: s.title, url: s.url })
+      finalSources.push({
+        type: 'academico',
+        title: s.title,
+        url: s.url,
+        trustScore: s.trustScore,
+        trustLevel: s.trustLevel,
+        trustFactors: s.trustFactors,
+        trustDetails: s.trustDetails
+      })
     }
 
     if (categorizedSources.video.length > 0) {
       const s = categorizedSources.video[0]
-      finalSources.push({ type: 'video', title: s.title, url: s.url })
+      finalSources.push({
+        type: 'video',
+        title: s.title,
+        url: s.url,
+        trustScore: s.trustScore,
+        trustLevel: s.trustLevel,
+        trustFactors: s.trustFactors,
+        trustDetails: s.trustDetails
+      })
     }
 
     if (categorizedSources.midia.length > 0) {
       const s = categorizedSources.midia[0]
-      finalSources.push({ type: 'midia', title: s.title, url: s.url })
+      finalSources.push({
+        type: 'midia',
+        title: s.title,
+        url: s.url,
+        trustScore: s.trustScore,
+        trustLevel: s.trustLevel,
+        trustFactors: s.trustFactors,
+        trustDetails: s.trustDetails
+      })
     }
 
-    // Se não conseguiu pelo menos 3 fontes, pegar os primeiros resultados relevantes
+    // Se não conseguiu pelo menos 3 fontes, pegar os primeiros resultados relevantes (com maior trust score)
     if (finalSources.length < 3 && relevantResults.length > 0) {
-      const remaining = relevantResults.slice(0, 4 - finalSources.length)
-      remaining.forEach(r => {
+      // Calcular trust score para os resultados relevantes e ordenar
+      const remainingWithScores = relevantResults
+        .slice(0, 4 - finalSources.length)
+        .map(r => {
+          const trustData = trustScoreCalculator.calculate({
+            url: r.url,
+            title: r.title,
+            content: r.content,
+            published_date: r.published_date || r.publishedDate,
+            author: r.author
+          })
+          return {
+            ...r,
+            trustScore: trustData.score,
+            trustLevel: trustData.level,
+            trustFactors: trustData.factors,
+            trustDetails: trustData.details
+          }
+        })
+        .sort((a, b) => b.trustScore - a.trustScore)
+
+      remainingWithScores.forEach(r => {
         finalSources.push({
           type: 'midia',
           title: r.title,
-          url: r.url
+          url: r.url,
+          trustScore: r.trustScore,
+          trustLevel: r.trustLevel,
+          trustFactors: r.trustFactors,
+          trustDetails: r.trustDetails
         })
       })
     }
+
+    // 📊 LOG: Trust Score médio das fontes
+    const avgTrustScore = trustScoreCalculator.calculateAverage(
+      finalSources.map(s => ({ url: s.url, title: s.title }))
+    )
+    console.log(`[Trust Score] ${perspectiveName}: Média de confiabilidade = ${avgTrustScore}/100`)
 
     // Aumentar contexto com mais fontes relevantes e informações estruturadas
     const contextSources = relevantResults.slice(0, 6).map(r => ({
@@ -436,11 +522,22 @@ INSTRUÇÕES IMPORTANTES:
 - Escreva 2-3 parágrafos focados e bem fundamentados
 - Priorize informações das fontes fornecidas sobre conhecimento geral
 
-FORMATO DE CITAÇÃO:
-- Use citações naturais integradas ao texto (não use numeração ou lista de referências)
-- Exemplo: "Estudos recentes demonstram que..." ou "Segundo análise da [instituição]..."
+⚠️ DETECÇÃO DE VIESES - MUITO IMPORTANTE:
+Após a análise, identifique EXPLICITAMENTE possíveis vieses:
+- Vieses ideológicos ou políticos presentes
+- Conflitos de interesse das fontes (quem financia?)
+- Limitações metodológicas evidentes
+- Perspectivas sub-representadas ou ausentes
+- Suposições não questionadas
 
-RESPONDA APENAS com a análise, SEM título ou introdução.`
+FORMATO DE RESPOSTA OBRIGATÓRIO:
+[ANÁLISE]
+Seu texto de 2-3 parágrafos aqui...
+
+[VIESES]
+- Viés 1: descrição
+- Viés 2: descrição
+(Se não houver vieses significativos, escreva "Nenhum viés significativo identificado")`
 
     const contentCompletion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -460,8 +557,34 @@ RESPONDA APENAS com a análise, SEM título ou introdução.`
 
     const generatedContent = contentCompletion.choices[0].message.content
 
+    // 🔍 PARSING: Separar análise e vieses
+    let analysis = generatedContent
+    let biases = []
+
+    if (generatedContent.includes('[VIESES]')) {
+      const parts = generatedContent.split('[VIESES]')
+      analysis = parts[0].replace('[ANÁLISE]', '').trim()
+
+      const biasesText = parts[1].trim()
+
+      // Extrair vieses da lista
+      biases = biasesText
+        .split('\n')
+        .filter(line => line.trim().startsWith('-'))
+        .map(line => line.trim().substring(1).trim())
+        .filter(bias => bias.length > 0)
+
+      // Log de vieses detectados
+      if (biases.length > 0 && !biases[0].toLowerCase().includes('nenhum')) {
+        console.log(`[${pt.name}] 🎯 ${biases.length} viese(s) detectado(s)`)
+      }
+    } else {
+      // Se não tiver formato esperado, usar conteúdo como está
+      console.warn(`[${pt.name}] ⚠️ Formato de resposta não incluiu seção [VIESES]`)
+    }
+
     // Validar alinhamento entre conteúdo e fontes
-    const validation = await validateSourceAlignment(generatedContent, sources, topic)
+    const validation = await validateSourceAlignment(analysis, sources, topic)
 
     // Log para monitoramento de qualidade
     console.log(`[${pt.name}] Alinhamento: ${validation.score}/100 - ${validation.reason || 'OK'}`)
@@ -473,7 +596,8 @@ RESPONDA APENAS com a análise, SEM título ou introdução.`
 
     return {
       type: pt.type,
-      content: generatedContent,
+      content: analysis,
+      biases: biases, // 🆕 Incluir vieses detectados
       sources: sources,
       alignmentScore: validation.score // Adicionar score para análise futura
     }

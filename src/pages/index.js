@@ -14,6 +14,10 @@ export default function Home() {
   const [progress, setProgress] = useState(0)
   const textareaRef = useRef(null)
   const [sourceFeedback, setSourceFeedback] = useState({})
+  const [showComparison, setShowComparison] = useState(false)
+  const [selectedPerspectives, setSelectedPerspectives] = useState([])
+  const [comparison, setComparison] = useState(null)
+  const [loadingComparison, setLoadingComparison] = useState(false)
 
   const suggestedTopics = [
     'Inteligência Artificial na educação',
@@ -236,6 +240,56 @@ export default function Home() {
       console.log(`Feedback enviado: ${feedback} para ${sourceUrl}`)
     } catch (err) {
       console.error('Erro ao enviar feedback:', err)
+    }
+  }
+
+  const handleTogglePerspective = (perspectiveType) => {
+    setSelectedPerspectives(prev => {
+      if (prev.includes(perspectiveType)) {
+        return prev.filter(t => t !== perspectiveType)
+      } else {
+        return [...prev, perspectiveType]
+      }
+    })
+  }
+
+  const handleCompare = async () => {
+    if (selectedPerspectives.length < 2) {
+      alert('Selecione pelo menos 2 perspectivas para comparar')
+      return
+    }
+
+    setLoadingComparison(true)
+    setComparison(null)
+
+    try {
+      const perspectivesToCompare = result.perspectives.filter(p =>
+        selectedPerspectives.includes(p.type)
+      )
+
+      const response = await fetch('/api/compare-perspectives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          perspectives: perspectivesToCompare,
+          topic: topic
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao comparar perspectivas')
+      }
+
+      setComparison(data.comparison)
+      setShowComparison(true)
+
+    } catch (err) {
+      console.error('Erro ao comparar:', err)
+      alert('Erro ao comparar perspectivas. Tente novamente.')
+    } finally {
+      setLoadingComparison(false)
     }
   }
 
@@ -536,13 +590,69 @@ export default function Home() {
                       {p.content}
                     </p>
 
+                    {/* Bias Indicators */}
+                    {p.biases && p.biases.length > 0 && !p.biases[0]?.toLowerCase().includes('nenhum') && (
+                      <div className="mt-3 mb-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-yellow-300 mb-1">
+                              ⚠️ Possíveis Vieses Detectados
+                            </p>
+                            <ul className="space-y-1 text-xs text-yellow-200/90">
+                              {p.biases.map((bias, bIdx) => (
+                                <li key={bIdx} className="flex items-start gap-1.5">
+                                  <span className="text-yellow-400 flex-shrink-0 mt-0.5">•</span>
+                                  <span>{bias}</span>
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="text-xs text-yellow-300/60 mt-2">
+                              Esta análise pode conter vieses. Considere múltiplas fontes ao formar sua opinião.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Sources */}
                     {p.sources && p.sources.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-700">
-                        <p className="text-sm font-semibold text-gray-400 mb-3">
-                          📚 Fontes e Referências
-                          <span className="ml-2 text-xs text-gray-500">(avalie a relevância)</span>
-                        </p>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm font-semibold text-gray-400">
+                            📚 Fontes e Referências
+                            <span className="ml-2 text-xs text-gray-500">(avalie a relevância)</span>
+                          </p>
+                          {/* Trust Score médio das fontes */}
+                          {p.sources.some(s => s.trustScore !== undefined) && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Confiabilidade média:</span>
+                              {(() => {
+                                const scores = p.sources.filter(s => s.trustScore !== undefined).map(s => s.trustScore)
+                                const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+                                const level = avgScore >= 80 ? 'high' : avgScore >= 60 ? 'medium' : avgScore >= 40 ? 'low' : 'very-low'
+                                return (
+                                  <span
+                                    className={`px-2 py-1 text-xs font-bold rounded-full ${
+                                      level === 'high'
+                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                        : level === 'medium'
+                                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                        : level === 'low'
+                                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                    }`}
+                                    title={`Média de confiabilidade: ${avgScore}/100`}
+                                  >
+                                    {avgScore}/100
+                                  </span>
+                                )
+                              })()}
+                            </div>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           {p.sources.map((source, sIdx) => {
                             const feedbackKey = `${p.type}-${source.url}`
@@ -584,12 +694,46 @@ export default function Home() {
                               </div>
 
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-300 group-hover:text-primary transition-colors line-clamp-1">
-                                  {source.title}
-                                </p>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-sm text-gray-300 group-hover:text-primary transition-colors line-clamp-1 flex-1">
+                                    {source.title}
+                                  </p>
+                                  {/* Trust Score Badge */}
+                                  {source.trustScore !== undefined && (
+                                    <span
+                                      className={`px-2 py-0.5 text-xs font-bold rounded-full flex-shrink-0 ${
+                                        source.trustLevel === 'high'
+                                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                          : source.trustLevel === 'medium'
+                                          ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                          : source.trustLevel === 'low'
+                                          ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                      }`}
+                                      title={`Trust Score: ${source.trustScore}/100 - ${source.trustDetails?.label || ''}`}
+                                    >
+                                      {source.trustScore}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-xs text-gray-500 truncate">
                                   {new URL(source.url).hostname}
                                 </p>
+                                {/* Trust Factors (expandable) */}
+                                {source.trustFactors && source.trustFactors.length > 0 && (
+                                  <details className="mt-1">
+                                    <summary className="text-xs text-gray-400 cursor-pointer hover:text-primary">
+                                      Ver detalhes de confiabilidade
+                                    </summary>
+                                    <ul className="mt-1 space-y-0.5 text-xs text-gray-400 pl-2">
+                                      {source.trustFactors.map((factor, fIdx) => (
+                                        <li key={fIdx} className="truncate">
+                                          {factor}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </details>
+                                )}
                               </div>
 
                               <svg className="w-4 h-4 text-gray-500 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -650,6 +794,140 @@ export default function Home() {
                   </ul>
                 </div>
               )}
+
+              {/* Perspective Comparison */}
+              <div className="bg-purple-900/20 rounded-lg p-4 sm:p-6 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 animate-slideUp" style={{ animationDelay: `${(result.perspectives.length + 1) * 100}ms` }}>
+                <h4 className="text-base sm:text-lg font-semibold mb-3">
+                  🔄 Comparar Perspectivas
+                </h4>
+                <p className="text-sm text-gray-400 mb-4">
+                  Selecione 2 ou mais perspectivas para ver pontos em comum, divergências e contradições
+                </p>
+
+                {/* Perspective Selectors */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                  {result.perspectives.map((p, idx) => (
+                    <label
+                      key={idx}
+                      className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedPerspectives.includes(p.type)
+                          ? 'bg-purple-500/20 border-purple-500'
+                          : 'bg-gray-800/50 border-gray-700 hover:border-purple-500/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedPerspectives.includes(p.type)}
+                        onChange={() => handleTogglePerspective(p.type)}
+                        className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                      />
+                      <span className="text-sm capitalize">{p.type}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Compare Button */}
+                <button
+                  onClick={handleCompare}
+                  disabled={selectedPerspectives.length < 2 || loadingComparison}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
+                >
+                  {loadingComparison ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Comparando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                      Comparar Selecionadas ({selectedPerspectives.length})
+                    </>
+                  )}
+                </button>
+
+                {/* Comparison Results */}
+                {comparison && (
+                  <div className="mt-6 space-y-4 animate-fadeIn">
+                    {/* Consensus */}
+                    {comparison.consensus && comparison.consensus.length > 0 && (
+                      <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                        <h5 className="text-sm font-semibold text-green-300 mb-2 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Pontos em Comum
+                        </h5>
+                        <ul className="space-y-1 text-xs text-green-200/90">
+                          {comparison.consensus.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-green-400 mt-0.5">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Divergences */}
+                    {comparison.divergences && comparison.divergences.length > 0 && (
+                      <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                        <h5 className="text-sm font-semibold text-yellow-300 mb-2 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                          </svg>
+                          Divergências Principais
+                        </h5>
+                        <ul className="space-y-1 text-xs text-yellow-200/90">
+                          {comparison.divergences.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-yellow-400 mt-0.5">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Contradictions */}
+                    {comparison.contradictions && comparison.contradictions.length > 0 && (
+                      <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+                        <h5 className="text-sm font-semibold text-red-300 mb-2 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          Contradições Diretas
+                        </h5>
+                        <ul className="space-y-1 text-xs text-red-200/90">
+                          {comparison.contradictions.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-red-400 mt-0.5">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Synthesis */}
+                    {comparison.synthesis && (
+                      <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                        <h5 className="text-sm font-semibold text-purple-300 mb-2 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          Síntese Integrada
+                        </h5>
+                        <p className="text-xs text-purple-200/90">{comparison.synthesis}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Share Actions */}
               <div className="bg-gray-800/30 rounded-lg p-4 sm:p-6 border border-gray-700 animate-slideUp" style={{ animationDelay: `${(result.perspectives.length + 1) * 100}ms` }}>

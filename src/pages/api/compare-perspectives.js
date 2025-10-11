@@ -1,0 +1,174 @@
+import OpenAI from 'openai'
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  try {
+    const { perspectives, topic } = req.body
+
+    if (!perspectives || perspectives.length < 2) {
+      return res.status(400).json({ error: 'Pelo menos 2 perspectivas são necessárias para comparação' })
+    }
+
+    // Formatar perspectivas para análise
+    const perspectivesText = perspectives.map(p =>
+      `[${p.type.toUpperCase()}]\n${p.content}`
+    ).join('\n\n---\n\n')
+
+    const prompt = `Você é um analista especializado em síntese e comparação de múltiplas perspectivas.
+
+TEMA: "${topic}"
+
+PERSPECTIVAS A COMPARAR:
+${perspectivesText}
+
+TAREFA:
+Analise estas ${perspectives.length} perspectivas e identifique:
+
+1. PONTOS EM COMUM (consensos entre as perspectivas)
+2. DIVERGÊNCIAS PRINCIPAIS (onde discordam)
+3. CONTRADIÇÕES DIRETAS (afirmações opostas)
+4. SÍNTESE (visão integrada considerando todas as perspectivas)
+
+FORMATO DE RESPOSTA OBRIGATÓRIO:
+
+[CONSENSOS]
+- Consenso 1: descrição
+- Consenso 2: descrição
+(Se não houver consensos, escreva "Nenhum consenso significativo identificado")
+
+[DIVERGÊNCIAS]
+- Divergência 1: descrição (Perspectiva X diz... vs Perspectiva Y diz...)
+- Divergência 2: descrição
+(Se não houver divergências, escreva "Nenhuma divergência significativa")
+
+[CONTRADIÇÕES]
+- Contradição 1: descrição específica do conflito
+- Contradição 2: descrição
+(Se não houver contradições diretas, escreva "Nenhuma contradição direta")
+
+[SÍNTESE]
+Um parágrafo integrando as perspectivas, destacando a complexidade do tema e como cada visão contribui para o entendimento completo.
+
+IMPORTANTE:
+- Seja específico e cite as perspectivas pelo nome
+- Identifique apenas divergências/contradições REAIS (não invente)
+- Na síntese, busque uma visão equilibrada que honre todas as perspectivas`
+
+    console.log('[Compare] Analisando comparação entre perspectivas...')
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'Você é um analista imparcial especializado em identificar padrões, consensos e divergências entre múltiplas perspectivas.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.3, // Baixa temperatura para análise mais factual
+      max_tokens: 800
+    })
+
+    const response = completion.choices[0].message.content
+
+    // Parse da resposta
+    const comparison = parseComparisonResponse(response)
+
+    console.log('[Compare] Análise concluída:', {
+      consensos: comparison.consensus.length,
+      divergências: comparison.divergences.length,
+      contradições: comparison.contradictions.length
+    })
+
+    res.status(200).json({
+      success: true,
+      comparison
+    })
+
+  } catch (error) {
+    console.error('Error in compare-perspectives API:', error)
+    res.status(500).json({
+      error: error.message || 'Erro ao comparar perspectivas'
+    })
+  }
+}
+
+/**
+ * Parse da resposta estruturada da IA
+ */
+function parseComparisonResponse(response) {
+  const result = {
+    consensus: [],
+    divergences: [],
+    contradictions: [],
+    synthesis: ''
+  }
+
+  try {
+    // Extrair seção de CONSENSOS
+    if (response.includes('[CONSENSOS]')) {
+      const consensusSection = extractSection(response, '[CONSENSOS]', '[DIVERGÊNCIAS]')
+      result.consensus = extractListItems(consensusSection)
+    }
+
+    // Extrair seção de DIVERGÊNCIAS
+    if (response.includes('[DIVERGÊNCIAS]')) {
+      const divergencesSection = extractSection(response, '[DIVERGÊNCIAS]', '[CONTRADIÇÕES]')
+      result.divergences = extractListItems(divergencesSection)
+    }
+
+    // Extrair seção de CONTRADIÇÕES
+    if (response.includes('[CONTRADIÇÕES]')) {
+      const contradictionsSection = extractSection(response, '[CONTRADIÇÕES]', '[SÍNTESE]')
+      result.contradictions = extractListItems(contradictionsSection)
+    }
+
+    // Extrair SÍNTESE
+    if (response.includes('[SÍNTESE]')) {
+      const synthesisStart = response.indexOf('[SÍNTESE]') + '[SÍNTESE]'.length
+      result.synthesis = response.substring(synthesisStart).trim()
+    }
+
+  } catch (error) {
+    console.error('Error parsing comparison response:', error)
+    // Fallback: retornar resposta bruta
+    result.synthesis = response
+  }
+
+  return result
+}
+
+/**
+ * Extrai uma seção entre dois marcadores
+ */
+function extractSection(text, startMarker, endMarker) {
+  const startIndex = text.indexOf(startMarker) + startMarker.length
+  const endIndex = endMarker ? text.indexOf(endMarker, startIndex) : text.length
+
+  if (startIndex === -1 || (endMarker && endIndex === -1)) {
+    return ''
+  }
+
+  return text.substring(startIndex, endIndex).trim()
+}
+
+/**
+ * Extrai itens de lista (começando com "-")
+ */
+function extractListItems(text) {
+  return text
+    .split('\n')
+    .filter(line => line.trim().startsWith('-'))
+    .map(line => line.trim().substring(1).trim())
+    .filter(item => item.length > 0 && !item.toLowerCase().includes('nenhum'))
+}
