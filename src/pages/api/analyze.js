@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { tavily } from '@tavily/core'
+import { temporalDetector } from '../../lib/temporalDetector'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -44,6 +45,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Topic is required' })
     }
 
+    // 🕐 DETECTAR TERMOS TEMPORAIS NA QUERY
+    const temporalInfo = temporalDetector.detect(topic)
+
+    if (temporalInfo && temporalInfo.detected) {
+      console.log(`[Temporal] Detectado: "${temporalInfo.label}" - ${temporalDetector.formatDateRange(temporalInfo)}`)
+      console.log(`[Temporal] Query original: "${topic}"`)
+      console.log(`[Temporal] Query aprimorada: "${temporalInfo.enhancedQuery}"`)
+    }
+
     // Criar análise no banco (sem user_id para MVP)
     const { data: analysis, error: analysisError } = await supabase
       .from('analyses')
@@ -56,8 +66,8 @@ export default async function handler(req, res) {
 
     if (analysisError) throw analysisError
 
-    // Gerar as 6 perspectivas com IA
-    const perspectives = await generatePerspectives(topic)
+    // Gerar as 6 perspectivas com IA, passando informação temporal
+    const perspectives = await generatePerspectives(topic, temporalInfo)
 
     // Salvar perspectivas no banco
     const perspectivesData = perspectives.map(p => ({
@@ -94,12 +104,27 @@ export default async function handler(req, res) {
       .update({ status: 'completed' })
       .eq('id', analysis.id)
 
-    res.status(200).json({
+    // Preparar resposta com informação temporal se disponível
+    const response = {
       success: true,
       analysisId: analysis.id,
       perspectives,
       questions
-    })
+    }
+
+    // 🕐 ADICIONAR INFORMAÇÃO TEMPORAL NA RESPOSTA
+    if (temporalInfo && temporalInfo.detected) {
+      response.temporalInfo = {
+        detected: true,
+        type: temporalInfo.type,
+        label: temporalInfo.label,
+        dateRange: temporalDetector.formatDateRange(temporalInfo),
+        startDate: temporalInfo.startDate.toISOString(),
+        endDate: temporalInfo.endDate.toISOString()
+      }
+    }
+
+    res.status(200).json(response)
 
   } catch (error) {
     console.error('Error in analyze API:', error)
@@ -152,7 +177,7 @@ Se nenhuma for relevante, responda "nenhuma".`
   }
 }
 
-async function searchRealSources(topic, perspectiveName, perspectiveFocus) {
+async function searchRealSources(topic, perspectiveName, perspectiveFocus, temporalInfo = null) {
   try {
     // Verificar cache primeiro
     const cacheKey = getCacheKey(topic, perspectiveName, perspectiveFocus)
@@ -160,6 +185,14 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus) {
 
     if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
       console.log(`[Cache HIT] ${perspectiveName} - usando resultados em cache`)
+      // Mesmo com cache, aplicar filtro temporal se necessário
+      if (temporalInfo && temporalInfo.detected) {
+        const filteredData = {
+          ...cached.data,
+          sources: cached.data.sources // Fontes já foram filtradas quando salvas no cache
+        }
+        return filteredData
+      }
       return cached.data
     }
 
@@ -170,15 +203,34 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus) {
       cleanExpiredCache()
     }
 
-    // Fazer busca real na web sobre o tema, incluindo o foco da perspectiva para maior precisão
-    const searchQuery = `${topic} ${perspectiveName} ${perspectiveFocus}`
+    // 🕐 USAR QUERY APRIMORADA SE HOUVER INFORMAÇÃO TEMPORAL
+    let searchQuery = `${topic} ${perspectiveName} ${perspectiveFocus}`
+
+    if (temporalInfo && temporalInfo.detected) {
+      // Usar a query aprimorada que inclui contexto de data
+      searchQuery = `${temporalInfo.enhancedQuery} ${perspectiveName} ${perspectiveFocus}`
+      console.log(`[Temporal Search] ${perspectiveName}: "${searchQuery}"`)
+    }
+
     const searchResult = await tavilyClient.search(searchQuery, {
-      maxResults: 10,
+      maxResults: 15, // Buscar mais resultados para compensar filtros
       includeAnswer: false,
       includeRawContent: false
     })
 
-    const results = searchResult.results || []
+    let results = searchResult.results || []
+
+    // 🕐 FILTRAR RESULTADOS POR DATA SE TEMPORAL INFO PRESENTE
+    if (temporalInfo && temporalInfo.detected) {
+      const originalCount = results.length
+      results = results.filter(result => temporalDetector.validateResult(result, temporalInfo))
+      console.log(`[Temporal Filter] ${perspectiveName}: ${originalCount} resultados → ${results.length} após filtro temporal`)
+
+      // Se filtrou demais, avisar
+      if (results.length < 3) {
+        console.warn(`[Temporal Filter] ${perspectiveName}: Poucos resultados após filtro temporal (${results.length}). Dados podem ser limitados.`)
+      }
+    }
 
     // Filtrar fontes relevantes usando IA
     const relevantResults = await filterRelevantSources(results, topic, perspectiveFocus)
@@ -330,7 +382,7 @@ Responda APENAS em formato JSON:
   }
 }
 
-async function generatePerspectives(topic) {
+async function generatePerspectives(topic, temporalInfo = null) {
   const perspectiveTypes = [
     { type: 'tecnica', name: 'Técnica', focus: 'aspectos técnicos, dados, evidências científicas' },
     { type: 'popular', name: 'Popular', focus: 'senso comum, impacto no dia a dia das pessoas' },
@@ -342,14 +394,31 @@ async function generatePerspectives(topic) {
 
   // Gerar todas as perspectivas em paralelo
   const perspectivesPromises = perspectiveTypes.map(async (pt) => {
-    // Buscar fontes reais na web, passando o foco para busca mais precisa
-    const { sources, searchContext } = await searchRealSources(topic, pt.name, pt.focus)
+    // Buscar fontes reais na web, passando o foco para busca mais precisa E informação temporal
+    const { sources, searchContext } = await searchRealSources(topic, pt.name, pt.focus, temporalInfo)
+
+    // 🕐 ADICIONAR CONTEXTO TEMPORAL AO PROMPT SE DISPONÍVEL
+    let temporalContext = ''
+    if (temporalInfo && temporalInfo.detected) {
+      temporalContext = `
+⏰ IMPORTANTE - CONTEXTO TEMPORAL:
+Esta consulta refere-se especificamente a: ${temporalInfo.label}
+Período: ${temporalDetector.formatDateRange(temporalInfo)}
+Data atual: ${temporalDetector.formatDate(new Date())}
+
+INSTRUÇÕES TEMPORAIS:
+- Foque APENAS em informações deste período específico
+- Se os dados não forem recentes o suficiente, mencione isso explicitamente
+- Priorize fontes com datas dentro do período solicitado
+- NÃO use informações desatualizadas ou de períodos diferentes
+`
+    }
 
     // Gerar análise baseada no conteúdo real encontrado
     const prompt = `Você é um analista especializado em análise de múltiplas perspectivas.
 
 TEMA EXATO A SER ANALISADO: "${topic}"
-
+${temporalContext}
 PERSPECTIVA A ANALISAR: ${pt.name}
 FOCO: ${pt.focus}
 

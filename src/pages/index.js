@@ -480,6 +480,24 @@ export default function Home() {
             <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fadeIn">
               <h3 className="text-xl sm:text-2xl font-bold">Análise Completa</h3>
 
+              {/* Temporal Info Banner */}
+              {result.temporalInfo && result.temporalInfo.detected && (
+                <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4 flex items-start gap-3 animate-fadeIn">
+                  <svg className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="font-semibold text-blue-300">Filtro Temporal Ativo</p>
+                    <p className="text-sm text-blue-200 mt-1">
+                      {result.temporalInfo.dateRange}
+                    </p>
+                    <p className="text-xs text-blue-300/70 mt-1">
+                      Os resultados foram filtrados para exibir apenas informações deste período específico.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Perspectives */}
               <div className="grid gap-3 sm:gap-4">
                 {result.perspectives.map((p, idx) => (
