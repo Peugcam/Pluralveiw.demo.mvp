@@ -20,7 +20,7 @@ export default function SEO({
     offers: {
       '@type': 'Offer',
       price: '0',
-      priceCurrency': 'BRL'
+      priceCurrency: 'BRL'
     },
     creator: {
       '@type': 'Organization',
