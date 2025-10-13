@@ -1,0 +1,40 @@
+# Robots.txt - PluralView MVP
+# https://pluralview-mvp.vercel.app/robots.txt
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow API routes (não indexar APIs)
+Disallow: /api/
+
+# Disallow admin/auth pages
+Disallow: /admin
+Disallow: /login
+Disallow: /signup
+
+# Allow specific bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Sitemap location
+Sitemap: https://pluralview-mvp.vercel.app/sitemap.xml
+
+# Crawl delay (optional - avoid overloading server)
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /

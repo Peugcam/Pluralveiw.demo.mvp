@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import Head from 'next/head'
 import { supabase } from '../lib/supabase'
+import SEO from '../components/SEO'
 
 export default function Home() {
   const [topic, setTopic] = useState('')
@@ -308,20 +308,7 @@ export default function Home() {
 
   return (
     <>
-      <Head>
-        <title>PluralView MVP - Análise Inteligente de Múltiplas Perspectivas</title>
-        <meta name="description" content="Obtenha análises completas e imparciais sobre qualquer tema através de 6 perspectivas diferentes. Use IA para explorar todos os ângulos de um assunto." />
-        <meta name="keywords" content="análise de perspectivas, inteligência artificial, múltiplas visões, pensamento crítico, análise imparcial" />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="PluralView MVP - Análise Inteligente de Múltiplas Perspectivas" />
-        <meta property="og:description" content="Obtenha análises completas e imparciais sobre qualquer tema através de 6 perspectivas diferentes." />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="PluralView MVP - Análise Inteligente de Múltiplas Perspectivas" />
-        <meta name="twitter:description" content="Obtenha análises completas e imparciais sobre qualquer tema através de 6 perspectivas diferentes." />
-        <meta name="robots" content="index, follow" />
-        <meta name="language" content="Portuguese" />
-        <meta name="author" content="PluralView" />
-      </Head>
+      <SEO />
 
       <div className="min-h-screen bg-gradient-to-b from-dark to-gray-900">
         {/* Header */}
