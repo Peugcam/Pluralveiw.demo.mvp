@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { tavily } from '@tavily/core'
+import { LRUCache } from 'lru-cache'
 import { temporalDetector } from '../../lib/temporalDetector'
 import { trustScoreCalculator } from '../../lib/trustScoreCalculator'
+import { analyzeRateLimiter } from '../../lib/rateLimit'
+import { validateData, analyzeSchema } from '../../lib/validation'
+import { optionalAuth } from '../../lib/auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -11,27 +15,23 @@ const supabase = createClient(
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 30000, // 30 segundos timeout
 })
 
 const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY })
 
-// Cache em memória para buscas similares (15 minutos de TTL)
-const searchCache = new Map()
+// LRU Cache com limite para buscas similares (15 minutos de TTL)
 const CACHE_TTL = 15 * 60 * 1000 // 15 minutos
+const searchCache = new LRUCache({
+  max: 100, // Máximo de 100 entradas
+  ttl: CACHE_TTL,
+  updateAgeOnGet: false,
+  updateAgeOnHas: false,
+})
 
 // Função para gerar chave de cache
 function getCacheKey(topic, perspectiveName, perspectiveFocus) {
   return `${topic.toLowerCase().trim()}:${perspectiveName}:${perspectiveFocus}`.replace(/\s+/g, '_')
-}
-
-// Função para limpar cache expirado
-function cleanExpiredCache() {
-  const now = Date.now()
-  for (const [key, value] of searchCache.entries()) {
-    if (now - value.timestamp > CACHE_TTL) {
-      searchCache.delete(key)
-    }
-  }
 }
 
 export default async function handler(req, res) {
@@ -39,12 +39,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  try {
-    const { topic } = req.body
+  // Rate Limiting
+  if (!analyzeRateLimiter.middleware(req, res)) {
+    return // Rate limit exceeded, resposta já enviada
+  }
 
-    if (!topic) {
-      return res.status(400).json({ error: 'Topic is required' })
+  // Autenticação opcional (permite uso sem login, mas adiciona user se autenticado)
+  await optionalAuth(req)
+
+  try {
+    // Validação de input
+    const validation = validateData(analyzeSchema, req.body)
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: validation.error
+      })
     }
+
+    const { topic } = validation.data
 
     // 🕐 DETECTAR TERMOS TEMPORAIS NA QUERY
     const temporalInfo = temporalDetector.detect(topic)
@@ -55,13 +68,20 @@ export default async function handler(req, res) {
       console.log(`[Temporal] Query aprimorada: "${temporalInfo.enhancedQuery}"`)
     }
 
-    // Criar análise no banco (sem user_id para MVP)
+    // Criar análise no banco (com user_id se autenticado)
+    const analysisData = {
+      topic: topic,
+      status: 'processing'
+    }
+
+    // Adicionar user_id se autenticado
+    if (req.user && req.user.id) {
+      analysisData.user_id = req.user.id
+    }
+
     const { data: analysis, error: analysisError } = await supabase
       .from('analyses')
-      .insert({
-        topic: topic,
-        status: 'processing'
-      })
+      .insert(analysisData)
       .select()
       .single()
 
@@ -130,15 +150,17 @@ export default async function handler(req, res) {
     res.status(200).json(response)
 
   } catch (error) {
-    console.error('Error in analyze API:', error)
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    })
+    // Log de erro sem expor detalhes sensíveis
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in analyze API:', error)
+    } else {
+      // Em produção, log apenas informação básica
+      console.error('Error in analyze API:', error.message)
+    }
+
     res.status(500).json({
-      error: error.message || 'Unknown error',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred while processing your request'
     })
   }
 }
@@ -186,25 +208,20 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus, tempo
     const cacheKey = getCacheKey(topic, perspectiveName, perspectiveFocus)
     const cached = searchCache.get(cacheKey)
 
-    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    if (cached) {
       console.log(`[Cache HIT] ${perspectiveName} - usando resultados em cache`)
       // Mesmo com cache, aplicar filtro temporal se necessário
       if (temporalInfo && temporalInfo.detected) {
         const filteredData = {
-          ...cached.data,
-          sources: cached.data.sources // Fontes já foram filtradas quando salvas no cache
+          ...cached,
+          sources: cached.sources // Fontes já foram filtradas quando salvas no cache
         }
         return filteredData
       }
-      return cached.data
+      return cached
     }
 
     console.log(`[Cache MISS] ${perspectiveName} - buscando na web`)
-
-    // Limpar cache expirado periodicamente
-    if (searchCache.size > 50) {
-      cleanExpiredCache()
-    }
 
     // 🕐 USAR QUERY APRIMORADA SE HOUVER INFORMAÇÃO TEMPORAL
     let searchQuery = `${topic} ${perspectiveName} ${perspectiveFocus}`
@@ -406,11 +423,8 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus, tempo
       searchContext: searchContext
     }
 
-    // Salvar no cache
-    searchCache.set(cacheKey, {
-      data: result,
-      timestamp: Date.now()
-    })
+    // Salvar no cache (LRU gerencia TTL automaticamente)
+    searchCache.set(cacheKey, result)
 
     console.log(`[Cache SAVE] ${perspectiveName} - resultados salvos no cache`)
 

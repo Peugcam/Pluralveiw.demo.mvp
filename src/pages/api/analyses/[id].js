@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { apiRateLimiter } from '../../../lib/rateLimit'
+import { validateData, analysisIdSchema } from '../../../lib/validation'
+import { optionalAuth } from '../../../lib/auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -6,13 +9,29 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  const { id } = req.query
-
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Rate Limiting
+  if (!apiRateLimiter.middleware(req, res)) {
+    return // Rate limit exceeded
+  }
+
+  // Autenticação opcional
+  await optionalAuth(req)
+
   try {
+    // Validação de input
+    const validation = validateData(analysisIdSchema, req.query)
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: validation.error
+      })
+    }
+
+    const { id } = validation.data
     // Buscar análise
     const { data: analysis, error: analysisError } = await supabase
       .from('analyses')
@@ -49,7 +68,16 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Error fetching analysis:', error)
-    res.status(500).json({ error: error.message })
+    // Log de erro sem expor detalhes sensíveis
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching analysis:', error)
+    } else {
+      console.error('Error fetching analysis:', error.message)
+    }
+
+    res.status(500).json({
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro ao buscar análise'
+    })
   }
 }

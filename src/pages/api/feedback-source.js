@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { feedbackRateLimiter } from '../../lib/rateLimit'
+import { validateData, feedbackSourceSchema } from '../../lib/validation'
+import { optionalAuth } from '../../lib/auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,17 +13,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Rate Limiting
+  if (!feedbackRateLimiter.middleware(req, res)) {
+    return // Rate limit exceeded
+  }
+
+  // Autenticação opcional
+  await optionalAuth(req)
+
   try {
-    const { analysisId, perspectiveType, sourceUrl, feedback } = req.body
-
-    if (!analysisId || !perspectiveType || !sourceUrl || !feedback) {
-      return res.status(400).json({ error: 'Missing required fields' })
+    // Validação de input
+    const validation = validateData(feedbackSourceSchema, req.body)
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: validation.error
+      })
     }
 
-    // Validar feedback (relevant ou not_relevant)
-    if (!['relevant', 'not_relevant'].includes(feedback)) {
-      return res.status(400).json({ error: 'Invalid feedback value' })
-    }
+    const { analysisId, perspectiveType, sourceUrl, feedback } = validation.data
 
     // Salvar feedback no banco
     const { data, error } = await supabase
@@ -36,11 +47,16 @@ export default async function handler(req, res) {
       .single()
 
     if (error) {
-      console.error('Error saving feedback:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error saving feedback:', error)
+      }
       throw error
     }
 
-    console.log(`[Feedback] ${feedback} - ${sourceUrl} (${perspectiveType})`)
+    // Log sem dados sensíveis
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Feedback] ${feedback} - ${perspectiveType}`)
+    }
 
     res.status(200).json({
       success: true,
@@ -49,10 +65,16 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Error in feedback-source API:', error)
+    // Log de erro sem expor detalhes sensíveis
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in feedback-source API:', error)
+    } else {
+      console.error('Error in feedback-source API:', error.message)
+    }
+
     res.status(500).json({
-      error: error.message || 'Unknown error',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro ao processar feedback'
     })
   }
 }

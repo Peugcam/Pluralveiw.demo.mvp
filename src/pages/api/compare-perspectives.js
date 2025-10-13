@@ -1,7 +1,11 @@
 import OpenAI from 'openai'
+import { apiRateLimiter } from '../../lib/rateLimit'
+import { validateData, comparePerspectivesSchema } from '../../lib/validation'
+import { optionalAuth } from '../../lib/auth'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 30000, // 30 segundos timeout
 })
 
 export default async function handler(req, res) {
@@ -9,12 +13,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  try {
-    const { perspectives, topic } = req.body
+  // Rate Limiting
+  if (!apiRateLimiter.middleware(req, res)) {
+    return // Rate limit exceeded
+  }
 
-    if (!perspectives || perspectives.length < 2) {
-      return res.status(400).json({ error: 'Pelo menos 2 perspectivas são necessárias para comparação' })
+  // Autenticação opcional
+  await optionalAuth(req)
+
+  try {
+    // Validação de input
+    const validation = validateData(comparePerspectivesSchema, req.body)
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: validation.error
+      })
     }
+
+    const { perspectives, topic } = validation.data
 
     // Formatar perspectivas para análise
     const perspectivesText = perspectives.map(p =>
@@ -96,9 +113,16 @@ IMPORTANTE:
     })
 
   } catch (error) {
-    console.error('Error in compare-perspectives API:', error)
+    // Log de erro sem expor detalhes sensíveis
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in compare-perspectives API:', error)
+    } else {
+      console.error('Error in compare-perspectives API:', error.message)
+    }
+
     res.status(500).json({
-      error: error.message || 'Erro ao comparar perspectivas'
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro ao comparar perspectivas'
     })
   }
 }
