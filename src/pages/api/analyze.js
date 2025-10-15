@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { tavily } from '@tavily/core'
 import { LRUCache } from 'lru-cache'
 import { temporalDetector } from '../../lib/temporalDetector'
@@ -7,6 +8,7 @@ import { trustScoreCalculator } from '../../lib/trustScoreCalculator'
 import { analyzeRateLimiter } from '../../lib/rateLimit'
 import { validateData, analyzeSchema } from '../../lib/validation'
 import { optionalAuth } from '../../lib/auth'
+import { costLogger } from '../../lib/costLogger'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,6 +18,11 @@ const supabase = createClient(
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 30000, // 30 segundos timeout
+})
+
+// 🧠 Claude para análises de perspectivas (melhor qualidade)
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
 const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY })
@@ -87,8 +94,8 @@ export default async function handler(req, res) {
 
     if (analysisError) throw analysisError
 
-    // Gerar as 6 perspectivas com IA, passando informação temporal
-    const perspectives = await generatePerspectives(topic, temporalInfo)
+    // Gerar as 6 perspectivas com IA, passando informação temporal e analysisId para logging
+    const perspectives = await generatePerspectives(topic, temporalInfo, analysis.id)
 
     // Salvar perspectivas no banco
     const perspectivesData = perspectives.map(p => ({
@@ -107,7 +114,7 @@ export default async function handler(req, res) {
     if (perspectivesError) throw perspectivesError
 
     // Gerar perguntas reflexivas
-    const questions = await generateReflectiveQuestions(topic, perspectives)
+    const questions = await generateReflectiveQuestions(topic, perspectives, analysis.id)
 
     // Salvar perguntas no banco
     const questionsData = questions.map(q => ({
@@ -166,7 +173,7 @@ export default async function handler(req, res) {
 }
 
 // Função para filtrar fontes relevantes usando IA
-async function filterRelevantSources(sources, topic, perspectiveFocus) {
+async function filterRelevantSources(sources, topic, perspectiveFocus, analysisId = null) {
   try {
     // Filtrar fontes em lote para economia de tokens
     const sourcesText = sources.map((s, idx) =>
@@ -188,6 +195,15 @@ Se nenhuma for relevante, responda "nenhuma".`
       max_tokens: 50
     })
 
+    // 💰 LOG de custo - Filtro de Fontes (GPT-3.5)
+    if (analysisId && response.usage) {
+      await costLogger.logFilterSources({
+        analysisId: analysisId,
+        usage: response.usage,
+        model: 'gpt-3.5-turbo'
+      })
+    }
+
     const relevantIndices = response.choices[0].message.content.trim().toLowerCase()
 
     if (relevantIndices === 'nenhuma') {
@@ -202,7 +218,7 @@ Se nenhuma for relevante, responda "nenhuma".`
   }
 }
 
-async function searchRealSources(topic, perspectiveName, perspectiveFocus, temporalInfo = null) {
+async function searchRealSources(topic, perspectiveName, perspectiveFocus, temporalInfo = null, analysisId = null) {
   try {
     // Verificar cache primeiro
     const cacheKey = getCacheKey(topic, perspectiveName, perspectiveFocus)
@@ -253,7 +269,7 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus, tempo
     }
 
     // Filtrar fontes relevantes usando IA
-    const relevantResults = await filterRelevantSources(results, topic, perspectiveFocus)
+    const relevantResults = await filterRelevantSources(results, topic, perspectiveFocus, analysisId)
 
     // Categorizar resultados relevantes por tipo de domínio
     const categorizedSources = {
@@ -437,7 +453,7 @@ async function searchRealSources(topic, perspectiveName, perspectiveFocus, tempo
 }
 
 // Função para validar alinhamento entre conteúdo gerado e fontes
-async function validateSourceAlignment(content, sources, topic) {
+async function validateSourceAlignment(content, sources, topic, analysisId = null) {
   try {
     if (!sources || sources.length === 0) {
       return { aligned: true, score: 100, needsImprovement: false }
@@ -468,6 +484,15 @@ Responda APENAS em formato JSON:
       max_tokens: 150
     })
 
+    // 💰 LOG de custo - Validação de Alinhamento (GPT-3.5)
+    if (analysisId && response.usage) {
+      await costLogger.logValidateAlignment({
+        analysisId: analysisId,
+        usage: response.usage,
+        model: 'gpt-3.5-turbo'
+      })
+    }
+
     const result = JSON.parse(response.choices[0].message.content)
 
     return {
@@ -482,7 +507,7 @@ Responda APENAS em formato JSON:
   }
 }
 
-async function generatePerspectives(topic, temporalInfo = null) {
+async function generatePerspectives(topic, temporalInfo = null, analysisId = null) {
   const perspectiveTypes = [
     { type: 'tecnica', name: 'Técnica', focus: 'aspectos técnicos, dados, evidências científicas' },
     { type: 'popular', name: 'Popular', focus: 'senso comum, impacto no dia a dia das pessoas' },
@@ -495,7 +520,7 @@ async function generatePerspectives(topic, temporalInfo = null) {
   // Gerar todas as perspectivas em paralelo
   const perspectivesPromises = perspectiveTypes.map(async (pt) => {
     // Buscar fontes reais na web, passando o foco para busca mais precisa E informação temporal
-    const { sources, searchContext } = await searchRealSources(topic, pt.name, pt.focus, temporalInfo)
+    const { sources, searchContext } = await searchRealSources(topic, pt.name, pt.focus, temporalInfo, analysisId)
 
     // 🕐 ADICIONAR CONTEXTO TEMPORAL AO PROMPT SE DISPONÍVEL
     let temporalContext = ''
@@ -553,31 +578,39 @@ Seu texto de 2-3 parágrafos aqui...
 - Viés 2: descrição
 (Se não houver vieses significativos, escreva "Nenhum viés significativo identificado")`
 
-    const contentCompletion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+    // 🧠 USAR CLAUDE para análises (melhor qualidade, detecção de vieses superior)
+    const contentCompletion = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 600,
+      temperature: 0.5,
+      system: 'Você é um analista imparcial especializado em fornecer análises focadas e objetivas sobre temas específicos.',
       messages: [
-        {
-          role: 'system',
-          content: 'Você é um analista imparcial especializado em fornecer análises focadas e objetivas sobre temas específicos.'
-        },
         {
           role: 'user',
           content: prompt
         }
-      ],
-      temperature: 0.5,
-      max_tokens: 600
+      ]
     })
 
-    const generatedContent = contentCompletion.choices[0].message.content
+    const generatedContent = contentCompletion.content[0].text
+
+    // 💰 LOG de custo - Análise de Perspectiva (Claude)
+    if (analysisId) {
+      await costLogger.logPerspectiveAnalysis({
+        analysisId: analysisId,
+        perspectiveType: pt.type,
+        usage: contentCompletion.usage,
+        model: 'claude-sonnet-4-20250514'
+      })
+    }
 
     // 🔍 PARSING: Separar análise e vieses
-    let analysis = generatedContent
+    let analysisText = generatedContent
     let biases = []
 
     if (generatedContent.includes('[VIESES]')) {
       const parts = generatedContent.split('[VIESES]')
-      analysis = parts[0].replace('[ANÁLISE]', '').trim()
+      analysisText = parts[0].replace('[ANÁLISE]', '').trim()
 
       const biasesText = parts[1].trim()
 
@@ -598,7 +631,7 @@ Seu texto de 2-3 parágrafos aqui...
     }
 
     // Validar alinhamento entre conteúdo e fontes
-    const validation = await validateSourceAlignment(analysis, sources, topic)
+    const validation = await validateSourceAlignment(analysisText, sources, topic, analysisId)
 
     // Log para monitoramento de qualidade
     console.log(`[${pt.name}] Alinhamento: ${validation.score}/100 - ${validation.reason || 'OK'}`)
@@ -610,7 +643,7 @@ Seu texto de 2-3 parágrafos aqui...
 
     return {
       type: pt.type,
-      content: analysis,
+      content: analysisText,
       biases: biases, // 🆕 Incluir vieses detectados
       sources: sources,
       alignmentScore: validation.score // Adicionar score para análise futura
@@ -621,7 +654,7 @@ Seu texto de 2-3 parágrafos aqui...
   return perspectives
 }
 
-async function generateReflectiveQuestions(topic, perspectives) {
+async function generateReflectiveQuestions(topic, perspectives, analysisId = null) {
   const perspectivesText = perspectives.map(p =>
     `${p.type}: ${p.content.substring(0, 200)}...`
   ).join('\n\n')
@@ -644,6 +677,15 @@ Formato: Uma pergunta por linha, sem numeração.`
     temperature: 0.8,
     max_tokens: 300
   })
+
+  // 💰 LOG de custo - Perguntas Reflexivas (GPT-3.5)
+  if (analysisId && completion.usage) {
+    await costLogger.logReflectiveQuestions({
+      analysisId: analysisId,
+      usage: completion.usage,
+      model: 'gpt-3.5-turbo'
+    })
+  }
 
   const questions = completion.choices[0].message.content
     .split('\n')
