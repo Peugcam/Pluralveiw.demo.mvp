@@ -54,6 +54,10 @@ export const costLogger = {
    */
   calculateOpenAICost(model, inputTokens, outputTokens) {
     const pricing = {
+      'gpt-4o-mini': {
+        input: 0.00015 / 1000,  // $0.15 per 1M input tokens
+        output: 0.0006 / 1000   // $0.60 per 1M output tokens
+      },
       'gpt-3.5-turbo': {
         input: 0.0015 / 1000,  // $0.0015 per 1K input tokens
         output: 0.002 / 1000   // $0.002 per 1K output tokens
@@ -64,7 +68,7 @@ export const costLogger = {
       }
     }
 
-    const prices = pricing[model] || pricing['gpt-3.5-turbo']
+    const prices = pricing[model] || pricing['gpt-4o-mini']
     return (inputTokens * prices.input) + (outputTokens * prices.output)
   },
 
@@ -73,6 +77,10 @@ export const costLogger = {
    */
   calculateClaudeCost(model, inputTokens, outputTokens) {
     const pricing = {
+      'claude-3-5-haiku-20241022': {
+        input: 0.0008 / 1000,  // $0.80 per 1M input tokens
+        output: 0.004 / 1000   // $4 per 1M output tokens
+      },
       'claude-sonnet-4-20250514': {
         input: 0.003 / 1000,   // $3 per 1M input tokens
         output: 0.015 / 1000   // $15 per 1M output tokens
@@ -83,7 +91,7 @@ export const costLogger = {
       }
     }
 
-    const prices = pricing[model] || pricing['claude-sonnet-4-20250514']
+    const prices = pricing[model] || pricing['claude-3-5-haiku-20241022']
     return (inputTokens * prices.input) + (outputTokens * prices.output)
   },
 
@@ -94,7 +102,7 @@ export const costLogger = {
     analysisId,
     perspectiveType,
     usage,
-    model = 'claude-sonnet-4-20250514'
+    model = 'claude-3-5-haiku-20241022'
   }) {
     const cost = this.calculateClaudeCost(
       model,
@@ -121,7 +129,7 @@ export const costLogger = {
   async logFilterSources({
     analysisId,
     usage,
-    model = 'gpt-3.5-turbo'
+    model = 'gpt-4o-mini'
   }) {
     const cost = this.calculateOpenAICost(
       model,
@@ -147,7 +155,7 @@ export const costLogger = {
   async logValidateAlignment({
     analysisId,
     usage,
-    model = 'gpt-3.5-turbo'
+    model = 'gpt-4o-mini'
   }) {
     const cost = this.calculateOpenAICost(
       model,
@@ -173,7 +181,7 @@ export const costLogger = {
   async logReflectiveQuestions({
     analysisId,
     usage,
-    model = 'gpt-3.5-turbo'
+    model = 'gpt-4o-mini'
   }) {
     const cost = this.calculateOpenAICost(
       model,

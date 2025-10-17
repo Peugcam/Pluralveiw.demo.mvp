@@ -189,18 +189,18 @@ Responda APENAS com os números das fontes relevantes separados por vírgula (ex
 Se nenhuma for relevante, responda "nenhuma".`
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0,
       max_tokens: 50
     })
 
-    // 💰 LOG de custo - Filtro de Fontes (GPT-3.5)
+    // 💰 LOG de custo - Filtro de Fontes (GPT-4o-mini)
     if (analysisId && response.usage) {
       await costLogger.logFilterSources({
         analysisId: analysisId,
         usage: response.usage,
-        model: 'gpt-3.5-turbo'
+        model: 'gpt-4o-mini'
       })
     }
 
@@ -478,18 +478,18 @@ Responda APENAS em formato JSON:
 {"aligned": true/false, "score": 0-100, "reason": "breve explicação"}`
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0,
       max_tokens: 150
     })
 
-    // 💰 LOG de custo - Validação de Alinhamento (GPT-3.5)
+    // 💰 LOG de custo - Validação de Alinhamento (GPT-4o-mini)
     if (analysisId && response.usage) {
       await costLogger.logValidateAlignment({
         analysisId: analysisId,
         usage: response.usage,
-        model: 'gpt-3.5-turbo'
+        model: 'gpt-4o-mini'
       })
     }
 
@@ -580,7 +580,7 @@ Seu texto de 2-3 parágrafos aqui...
 
     // 🧠 USAR CLAUDE para análises (melhor qualidade, detecção de vieses superior)
     const contentCompletion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 600,
       temperature: 0.5,
       system: 'Você é um analista imparcial especializado em fornecer análises focadas e objetivas sobre temas específicos.',
@@ -600,7 +600,7 @@ Seu texto de 2-3 parágrafos aqui...
         analysisId: analysisId,
         perspectiveType: pt.type,
         usage: contentCompletion.usage,
-        model: 'claude-sonnet-4-20250514'
+        model: 'claude-3-5-haiku-20241022'
       })
     }
 
@@ -672,18 +672,18 @@ Gere 5 perguntas reflexivas que:
 Formato: Uma pergunta por linha, sem numeração.`
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.8,
     max_tokens: 300
   })
 
-  // 💰 LOG de custo - Perguntas Reflexivas (GPT-3.5)
+  // 💰 LOG de custo - Perguntas Reflexivas (GPT-4o-mini)
   if (analysisId && completion.usage) {
     await costLogger.logReflectiveQuestions({
       analysisId: analysisId,
       usage: completion.usage,
-      model: 'gpt-3.5-turbo'
+      model: 'gpt-4o-mini'
     })
   }
 
