@@ -75,6 +75,43 @@ export default async function handler(req, res) {
       console.log(`[Temporal] Query aprimorada: "${temporalInfo.enhancedQuery}"`)
     }
 
+    // 🚀 VERIFICAR CACHE: Buscar análise recente no banco (últimas 24h)
+    console.log(`[Cache] Verificando se existe análise recente para: "${topic}"`)
+
+    const { data: cachedAnalysis, error: cacheError } = await supabase
+      .from('analyses')
+      .select(`
+        *,
+        perspectives (*),
+        reflective_questions (*)
+      `)
+      .ilike('topic', topic)
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (cachedAnalysis && !cacheError) {
+      console.log(`[Cache HIT] ✅ Análise encontrada no cache! ID: ${cachedAnalysis.id}`)
+      console.log(`[Cache] Idade: ${Math.round((Date.now() - new Date(cachedAnalysis.created_at).getTime()) / 1000 / 60)} minutos`)
+
+      // Formatar perguntas
+      const questions = cachedAnalysis.reflective_questions?.map(q => q.question) || []
+
+      return res.status(200).json({
+        success: true,
+        cached: true,
+        cacheAge: Math.round((Date.now() - new Date(cachedAnalysis.created_at).getTime()) / 1000 / 60),
+        analysisId: cachedAnalysis.id,
+        perspectives: cachedAnalysis.perspectives || [],
+        questions: questions,
+        cost: 0,
+        message: 'Análise recuperada do cache (economia de 100%)'
+      })
+    }
+
+    console.log(`[Cache MISS] ❌ Nenhuma análise recente encontrada. Gerando nova...`)
+
     // Criar análise no banco (com user_id se autenticado)
     const analysisData = {
       topic: topic,
