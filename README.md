@@ -1,6 +1,6 @@
 # 🔍 PluralView MVP
 
-> Plataforma de análise multi-perspectiva com IA para combater polarização e promover pensamento crítico
+> Business Intelligence para Análise de Narrativas: Transforme horas de research em minutos com dados limpos e multi-perspectiva
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.0-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-18.2-blue)](https://reactjs.org/)
@@ -9,13 +9,27 @@
 
 ## 🎯 O Que É
 
-**PluralView** é uma ferramenta que analisa qualquer tópico através de **6 perspectivas diferentes**, ajudando você a:
+**PluralView** é uma plataforma de Business Intelligence que analisa qualquer tópico através de **6 perspectivas diferentes**, fornecendo dados de mercado sem ruído ideológico para:
 
-- 🧠 Entender múltiplos pontos de vista
-- 🎯 Detectar vieses e conflitos de interesse
-- 📊 Avaliar credibilidade de fontes (Trust Score)
-- 💡 Fazer perguntas reflexivas
-- 🔄 Comparar perspectivas lado a lado
+**Research & Análise:**
+- 📊 **Pesquisadores Independentes** - Research aprofundado em minutos, não horas
+- 🎓 **Acadêmicos e Think Tanks** - Análise multi-dimensional para papers e estudos
+- 📰 **Jornalistas Investigativos** - Fact-checking e análise de narrativas competitivas
+
+**Mercado & Investimento:**
+- 💰 **VCs e Fundos de Investimento** - Due diligence rápida e multi-dimensional
+- 📈 **Analistas de Mercado** - Visão 360° de qualquer tema em tempo real
+- 💼 **Profissionais de Indústria** - Análise de mercado e sentiment competitivo
+
+**Estratégia & Compliance:**
+- 🎯 **Consultorias Estratégicas** - Inteligência competitiva e análise de narrativas
+- ⚖️ **Advogados e Compliance** - Research de casos e análise regulatória
+- 🏛️ **Policy Makers** - Visão equilibrada para formulação de políticas públicas
+
+**Comunicação Corporativa:**
+- 🏢 **Empresas (C-level)** - Dados de sentiment sem viés político para decisões estratégicas
+- 📢 **Equipes de PR e Comunicação** - Análise de percepção pública e gestão de crises
+- 🌍 **ONGs e Organizações** - Análise de impacto social e advocacy baseado em dados
 
 ### Perspectivas Geradas
 
@@ -25,6 +39,43 @@
 4. **Acadêmica** - Pesquisas, teorias e estudos universitários
 5. **Conservadora** - Tradição, cautela e valores tradicionais
 6. **Progressista** - Mudança social, inovação e equidade
+
+### 💡 Casos de Uso Reais
+
+**VC realizando Due Diligence:**
+```
+Tópico: "Regulação de criptomoedas no Brasil"
+Resultado: Visão institucional, técnica e de mercado em 12s
+ROI: 4 horas de research → 12 segundos
+```
+
+**Consultoria Estratégica:**
+```
+Tópico: "Impacto da IA generativa no setor financeiro"
+Resultado: 6 perspectivas + Trust Score + análise de vieses
+Valor: Relatório multi-dimensional para cliente C-level
+```
+
+**Equipe de PR em Gestão de Crise:**
+```
+Tópico: "Polêmica sobre produto X nas redes sociais"
+Resultado: Análise de sentiment com fontes verificadas
+Ação: Resposta estratégica baseada em dados, não reação emocional
+```
+
+**Jornalista Investigativo:**
+```
+Tópico: "Conflito de interesses em licitação pública"
+Resultado: Perspectivas institucional, popular e acadêmica com Trust Score
+Valor: Fact-checking rápido e fontes auditáveis para matéria
+```
+
+**Advogado em Litigation:**
+```
+Tópico: "Precedentes sobre LGPD em e-commerce"
+Resultado: Análise técnica + institucional + acadêmica
+Benefício: Research de 6 horas → 12 segundos, fontes verificadas
+```
 
 ---
 
@@ -523,7 +574,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 <div align="center">
 
-**Construído com ❤️ para combater a polarização através do pensamento crítico**
+**Transformando research de horas em insights de segundos - Business Intelligence para o mundo real**
 
 [⬆ Voltar ao topo](#-pluralview-mvp)
 
