@@ -20,20 +20,28 @@
 - 📊 **Independent Researchers** - Deep research in minutes, not hours
 - 🎓 **Academics and Think Tanks** - Multi-dimensional analysis for papers and studies
 - 📰 **Investigative Journalists** - Fact-checking and competitive narrative analysis
+- 🔬 **Innovation/R&D Teams** - Technology trend analysis and opportunities
 
 **Market & Investment:**
 - 💰 **VCs and Investment Funds** - Fast, multi-dimensional due diligence
 - 📈 **Market Analysts** - 360° view of any topic in real-time
 - 💼 **Industry Professionals** - Market analysis and competitive sentiment
+- 📊 **Traders and Investors** - Sentiment analysis for trading decisions
+- 🎯 **Product Managers** - Product, competition, and user feedback analysis
 
 **Strategy & Compliance:**
 - 🎯 **Strategic Consultancies** - Competitive intelligence and narrative analysis
 - ⚖️ **Lawyers and Compliance** - Case research and regulatory analysis
 - 🏛️ **Policy Makers** - Balanced view for public policy formulation
+- 🛡️ **Risk Managers** - Regulatory and reputational risk analysis
+- 🌱 **ESG/Sustainability Managers** - Environmental and social theme analysis
 
-**Corporate Communications:**
+**Communications & Marketing:**
 - 🏢 **Companies (C-level)** - Sentiment data without political bias for strategic decisions
 - 📢 **PR and Communications Teams** - Public perception analysis and crisis management
+- 🎨 **Communications Agencies** - Fast research for campaigns and clients
+- 📱 **Marketing and Growth Teams** - Positioning and market narrative analysis
+- 👥 **Reputation Managers** - Proactive brand and perception monitoring
 - 🌍 **NGOs and Organizations** - Social impact analysis and data-driven advocacy
 
 ### Generated Perspectives
@@ -80,6 +88,41 @@ Value: Fast fact-checking and auditable sources for article
 Topic: "GDPR precedents in e-commerce"
 Result: Technical + institutional + academic analysis
 Benefit: 6 hours research → 12 seconds, verified sources
+```
+
+**Product Manager launching feature:**
+```
+Topic: "Facial biometric payment in apps"
+Result: Technical, popular, and conservative perspectives
+Insight: Understand resistance and opportunities before launch
+```
+
+**Risk Manager assessing exposure:**
+```
+Topic: "ESG regulation for tech companies"
+Result: Institutional + academic + progressive view
+Value: Anticipate regulatory changes and prepare compliance
+```
+
+**Trader analyzing market:**
+```
+Topic: "Dollar rise impact on Brazilian agribusiness"
+Result: Technical + popular + institutional analysis in 12s
+Advantage: Fast decisions with multiple market perspectives
+```
+
+**Marketing Team defining positioning:**
+```
+Topic: "Public perception of electric cars in Brazil"
+Result: 6 perspectives with Trust Score and bias analysis
+Application: Data-driven campaign, not assumptions
+```
+
+**ESG Manager on annual report:**
+```
+Topic: "Social impact of corporate diversity programs"
+Result: Academic, popular, and progressive perspectives
+ROI: Complete report with auditable sources in minutes
 ```
 
 ---

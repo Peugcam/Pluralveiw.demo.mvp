@@ -15,20 +15,28 @@
 - 📊 **Pesquisadores Independentes** - Research aprofundado em minutos, não horas
 - 🎓 **Acadêmicos e Think Tanks** - Análise multi-dimensional para papers e estudos
 - 📰 **Jornalistas Investigativos** - Fact-checking e análise de narrativas competitivas
+- 🔬 **Equipes de Innovation/R&D** - Análise de tendências tecnológicas e oportunidades
 
 **Mercado & Investimento:**
 - 💰 **VCs e Fundos de Investimento** - Due diligence rápida e multi-dimensional
 - 📈 **Analistas de Mercado** - Visão 360° de qualquer tema em tempo real
 - 💼 **Profissionais de Indústria** - Análise de mercado e sentiment competitivo
+- 📊 **Traders e Investidores** - Análise de sentiment para decisões de trading
+- 🎯 **Product Managers** - Análise de produto, concorrência e feedback de usuários
 
 **Estratégia & Compliance:**
 - 🎯 **Consultorias Estratégicas** - Inteligência competitiva e análise de narrativas
 - ⚖️ **Advogados e Compliance** - Research de casos e análise regulatória
 - 🏛️ **Policy Makers** - Visão equilibrada para formulação de políticas públicas
+- 🛡️ **Risk Managers** - Análise de riscos regulatórios e reputacionais
+- 🌱 **Gestores de ESG/Sustentabilidade** - Análise de temas ambientais e sociais
 
-**Comunicação Corporativa:**
+**Comunicação & Marketing:**
 - 🏢 **Empresas (C-level)** - Dados de sentiment sem viés político para decisões estratégicas
 - 📢 **Equipes de PR e Comunicação** - Análise de percepção pública e gestão de crises
+- 🎨 **Agências de Comunicação** - Research rápido para campanhas e clientes
+- 📱 **Marketing e Growth Teams** - Análise de posicionamento e narrativas de mercado
+- 👥 **Gestores de Reputação** - Monitoramento proativo de marca e percepção
 - 🌍 **ONGs e Organizações** - Análise de impacto social e advocacy baseado em dados
 
 ### Perspectivas Geradas
@@ -75,6 +83,41 @@ Valor: Fact-checking rápido e fontes auditáveis para matéria
 Tópico: "Precedentes sobre LGPD em e-commerce"
 Resultado: Análise técnica + institucional + acadêmica
 Benefício: Research de 6 horas → 12 segundos, fontes verificadas
+```
+
+**Product Manager lançando feature:**
+```
+Tópico: "Pagamento por biometria facial em apps"
+Resultado: Perspectivas técnica, popular e conservadora
+Insight: Entender resistências e oportunidades antes do lançamento
+```
+
+**Risk Manager avaliando exposição:**
+```
+Tópico: "Regulação de ESG para empresas de tecnologia"
+Resultado: Visão institucional + acadêmica + progressista
+Valor: Antecipar mudanças regulatórias e preparar compliance
+```
+
+**Trader analisando mercado:**
+```
+Tópico: "Impacto da alta do dólar no agronegócio brasileiro"
+Resultado: Análise técnica + popular + institucional em 12s
+Vantagem: Decisões rápidas com múltiplas perspectivas de mercado
+```
+
+**Marketing Team definindo posicionamento:**
+```
+Tópico: "Percepção pública sobre carros elétricos no Brasil"
+Resultado: 6 perspectivas com Trust Score e análise de vieses
+Aplicação: Campanha baseada em dados reais, não achismos
+```
+
+**Gestor de ESG em relatório anual:**
+```
+Tópico: "Impacto social de programas de diversidade corporativa"
+Resultado: Perspectivas acadêmica, popular e progressista
+ROI: Relatório completo com fontes auditáveis em minutos
 ```
 
 ---
