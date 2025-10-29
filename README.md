@@ -1,6 +1,6 @@
 # 🔍 PluralView MVP
 
-> Business Intelligence para Análise de Narrativas: Transforme horas de research em minutos com dados limpos e multi-perspectiva
+> Plataforma de Análise Multi-Perspectiva: Agregação inteligente de fontes, filtragem de vieses e mapeamento de narrativas para profissionais que trabalham com informação
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.0-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-18.2-blue)](https://reactjs.org/)
@@ -9,125 +9,323 @@
 
 ## 🎯 O Que É
 
-**PluralView** é uma plataforma de Business Intelligence que analisa qualquer tópico através de **6 perspectivas diferentes**, transformando **40 horas de research em 12 segundos**.
+**PluralView** é uma ferramenta profissional de **análise multi-perspectiva** que agrega dezenas de fontes automaticamente, identifica vieses ideológicos e mapeia narrativas complexas em **segundos**.
 
-### 🎯 Construído para 2 Perfis:
-
-#### 💰 VCs e Fundos de Investimento
-**O problema:** Due diligence de uma startup consome 20-40 horas de analistas a $100-200/hora ($2,000-8,000 por deal).
-
-**A solução PluralView:**
-- Análise regulatória do setor → **12 segundos**
-- Sentiment sobre tecnologia X → **12 segundos**
-- Riscos competitivos → **12 segundos**
-- **Total:** 30 análises = $0.60 vs $2,000-8,000
-
-**ROI:** 99.97% de redução de custo | Decisões mais rápidas que concorrentes
+Analise qualquer tópico através de **6 perspectivas diferentes** com fontes verificadas, trust scores e detecção automática de vieses.
 
 ---
 
-#### 🎯 Consultorias Estratégicas
-**O problema:** Research consome 40-60% do tempo em projetos, com junior analysts a $100-150/hora.
+## 👥 Para Quem é o PluralView
 
-**A solução PluralView:**
-- Market sizing e trends → **12 segundos**
-- Competitive intelligence → **12 segundos**
-- Regulatory landscape → **12 segundos**
-- **Resultado:** Reduzir 50% do tempo de research = dobrar margem
+### 🎯 PRIORIDADE ALTA
 
-**ROI:** Economizar 20h de analyst ($2,000-3,000) por projeto
+#### 📰 1. Jornalismo Investigativo & Fact-Checking
 
-### Perspectivas Geradas
+**Posicionamento:** *"Fact-checker do fact-checker. Agregamos dezenas de fontes em minutos, identificando vieses."*
 
-1. **Técnica** - Dados científicos e evidências
-2. **Popular** - Senso comum e impacto no dia a dia
+**Perfil:**
+- Jornalistas investigativos
+- Equipes de fact-checking
+- Editores de investigação
+- Repórteres de dados
+
+**Dor principal:**
+Verificar múltiplas fontes manualmente leva **horas ou dias**. Identificar vieses ideológicos ocultos é difícil e demorado.
+
+**Como PluralView resolve:**
+- ✅ Agregação de **15-20 fontes** em 12 segundos
+- ✅ **Trust Score 0-100** para cada fonte
+- ✅ **Detecção automática de 5 tipos de vieses**
+- ✅ Mapeamento de narrativas contraditórias
+- ✅ Documentação rastreável de metodologia
+
+**Budget:** R$ 2.000-5.000/mês
+
+**Caso de Uso Real:**
+
+```
+SITUAÇÃO: Matéria sobre reforma tributária
+
+SEM PLURALVIEW:
+- 4 horas buscando fontes manualmente
+- 2 horas cruzando informações
+- Risco de fontes não verificadas
+- Total: 6 horas
+
+COM PLURALVIEW:
+Query: "Reforma tributária 2025 - impactos econômicos"
+├─ 12 segundos → 6 perspectivas
+├─ 18 fontes agregadas (gov, academia, mídia)
+├─ Trust score médio: 82/100
+├─ 3 vieses detectados
+└─ Narrativas mapeadas: governo vs oposição vs mercado
+
+Jornalista usa resultado para:
+1. Verificar consistência de fontes
+2. Identificar gaps de cobertura
+3. Documentar imparcialidade metodológica
+4. Preparar matéria com múltiplas perspectivas
+
+Total: 30 minutos (incluindo leitura e análise)
+Economia: 5h30 por matéria
+```
+
+---
+
+#### 🎓 2. Pesquisa Acadêmica (Comunicação, Sociologia, Ciências Políticas)
+
+**Posicionamento:** *"Transforma meses de análise de discurso em semanas. Metodologia replicável."*
+
+**Perfil:**
+- Professores universitários
+- Pesquisadores de mestrado/doutorado
+- Centros de pesquisa
+- Laboratórios de análise de discurso
+
+**Dor principal:**
+Análise de discurso e mapeamento de narrativas leva **meses**. Coleta manual de dados é trabalhosa e sujeita a viés do pesquisador.
+
+**Como PluralView resolve:**
+- ✅ **Coleta automatizada** de corpus em segundos
+- ✅ **Metodologia replicável** (queries + trust scores documentados)
+- ✅ **Dados estruturados** (JSON export)
+- ✅ Análise multi-perspectiva sistemática
+- ✅ Detecção objetiva de vieses
+
+**Budget:** R$ 500-2.000/mês
+
+**Caso de Uso Real:**
+
+```
+SITUAÇÃO: Tese de doutorado sobre polarização política em redes sociais
+
+SEM PLURALVIEW:
+- 2 meses coletando fontes manualmente
+- 3 meses categorizando discursos
+- Viés do pesquisador na seleção
+- Dificuldade de replicação
+- Total: 5 meses de coleta + análise
+
+COM PLURALVIEW:
+Fase 1 - Coleta de Corpus (1 semana):
+├─ 50 queries sobre tópicos políticos
+├─ 300+ fontes agregadas automaticamente
+├─ Trust scores calculados
+├─ Vieses já identificados
+└─ Dados exportados em JSON
+
+Fase 2 - Análise Profunda (3 semanas):
+├─ Pesquisador foca em análise qualitativa
+├─ Metodologia documentada (replicável)
+├─ Comparação de narrativas estruturada
+└─ Paper com rigor metodológico
+
+Total: 1 mês (não 5 meses)
+Economia: 4 meses de trabalho
+Qualidade: Maior (metodologia objetiva + replicável)
+```
+
+---
+
+### 🎯 PRIORIDADE MÉDIA
+
+#### 🏛️ 3. Think Tanks & Consultorias de Políticas Públicas
+
+**Posicionamento:** *"Documenta imparcialidade. Relatórios apartidários com credibilidade metodológica."*
+
+**Perfil:**
+- Think tanks apartidários
+- Consultorias de políticas públicas
+- Institutos de pesquisa
+- ONGs de advocacy
+
+**Dor principal:**
+Relatórios precisam de **credibilidade apartidária**. Risco de acusações de viés ideológico compromete reputação.
+
+**Como PluralView resolve:**
+- ✅ **Documentação de imparcialidade metodológica**
+- ✅ Análise estruturada de múltiplas perspectivas
+- ✅ Identificação explícita de vieses
+- ✅ Fontes com trust scores verificáveis
+- ✅ Rastreabilidade total
+
+**Budget:** R$ 3.000-8.000/mês
+
+**Caso de Uso Real:**
+
+```
+SITUAÇÃO: Relatório sobre reforma da previdência para cliente governamental
+
+DESAFIO:
+- Cliente exige imparcialidade comprovada
+- Múltiplos stakeholders com interesses opostos
+- Risco de acusações de viés político
+
+COM PLURALVIEW:
+1. Análise Multi-Stakeholder:
+   ├─ Perspectiva Governo (institucional)
+   ├─ Perspectiva Sindicatos (conservadora)
+   ├─ Perspectiva Mercado (técnica)
+   ├─ Perspectiva Academia (acadêmica)
+   └─ Perspectiva Sociedade Civil (popular)
+
+2. Documentação de Metodologia:
+   ├─ Todas as fontes citadas (trust scores)
+   ├─ Vieses de cada fonte identificados
+   ├─ Processo replicável
+   └─ Transparência total
+
+3. Resultado:
+   ├─ Relatório apartidário defendível
+   ├─ Credibilidade metodológica
+   ├─ Redução de 60% no tempo de pesquisa
+   └─ Cliente satisfeito (renovação garantida)
+```
+
+---
+
+#### 🚨 4. Gestão de Crise & Reputação
+
+**Posicionamento:** *"Vai além de métricas. Monitora narrativas complexas em tempo real."*
+
+**Perfil:**
+- Departamentos de comunicação corporativa
+- Agências de gestão de crise
+- Chief Communications Officers
+- Equipes de relações públicas
+
+**Dor principal:**
+Ferramentas de monitoramento tradicionais (Brandwatch, etc.) só mostram **métricas quantitativas**. Análise qualitativa de narrativas é manual e lenta.
+
+**Como PluralView resolve:**
+- ✅ **Análise qualitativa profunda** (não só métricas)
+- ✅ Mapeamento de narrativas complexas
+- ✅ Identificação de vieses na cobertura
+- ✅ Alertas de mudança de narrativa
+- ✅ Comparação antes/depois de crises
+
+**Budget:** R$ 5.000-15.000/mês
+
+**Caso de Uso Real:**
+
+```
+SITUAÇÃO: Empresa de tecnologia enfrenta crise de vazamento de dados
+
+DESAFIO:
+- Narrativa negativa espalhando rapidamente
+- Múltiplas frentes de ataque (mídia, redes sociais, governo)
+- Ferramentas de monitoramento mostram volume mas não contexto
+
+COM PLURALVIEW:
+Dia 1 - Diagnóstico Rápido:
+├─ Query: "Vazamento dados Empresa X"
+├─ 6 perspectivas em 12 segundos
+├─ Identificação de narrativas:
+│   ├─ Mídia: foco em falha de segurança
+│   ├─ Academia: discussão sobre LGPD
+│   ├─ Governo: ameaça de multa
+│   └─ Sociedade: preocupação com privacidade
+└─ Mapeamento completo em 5 minutos
+
+Dias 2-7 - Monitoramento:
+├─ Queries diárias sobre cada narrativa
+├─ Detecção de mudanças de tom
+├─ Identificação de vieses favoráveis/desfavoráveis
+└─ Ajuste de estratégia de comunicação em tempo real
+
+Resultado:
+├─ Resposta 3x mais rápida
+├─ Comunicação direcionada para cada narrativa
+├─ Mitigação de danos à reputação
+└─ Economia de $50k em consultoria externa
+```
+
+---
+
+## ✨ Funcionalidades Principais
+
+### 🔍 Análise Multi-Perspectiva
+
+Digite qualquer tópico e receba análises de **6 ângulos diferentes**:
+
+1. **Técnica** - Dados científicos e evidências objetivas
+2. **Popular** - Senso comum e impacto no dia a dia das pessoas
 3. **Institucional** - Posição de governos e organizações oficiais
 4. **Acadêmica** - Pesquisas, teorias e estudos universitários
 5. **Conservadora** - Tradição, cautela e valores tradicionais
 6. **Progressista** - Mudança social, inovação e equidade
 
-### 💡 Casos de Uso Reais
-
-#### Use Case #1: VC analisando startup de Fintech
-
-**Situação:**
-- Startup pedindo $5M Series A
-- Setor: Pagamentos digitais com criptomoedas
-- Dúvida: Risco regulatório no Brasil?
-
-**Sem PluralView:**
-- Analyst gasta 8 horas pesquisando regulação
-- Custo: $800-1,600 em horas
-- Atraso de 2 dias na decisão
-
-**Com PluralView:**
+**Output:**
 ```
-Query 1: "Regulação de criptomoedas no Brasil 2025"
-└─ 12 segundos → 6 perspectivas + Trust Score
-└─ Perspectiva Institucional: Banco Central planeja regular stablecoins
-└─ Fontes: .gov.br (Trust Score: 95/100)
-
-Query 2: "Posição do Banco Central sobre pagamentos em crypto"
-└─ 12 segundos → Visão conservadora vs progressista
-└─ Detecta viés: BC mais conservador que mercado
-
-Query 3: "Precedentes de multas em fintechs não reguladas"
-└─ 12 segundos → Casos reais + análise acadêmica
-
-Total: 36 segundos | $0.06 | Decisão tomada no mesmo dia
+Input: "Regulação de IA no Brasil"
+Output:
+├── 6 perspectivas detalhadas (200-300 palavras cada)
+├── 15-20 fontes agregadas automaticamente
+├── Trust Score (0-100) para cada fonte
+├── Detecção de vieses em cada perspectiva
+├── 5 perguntas reflexivas
+└── Opção de comparar perspectivas
 ```
-
-**ROI:** $1,600 economizados | 2 dias mais rápido que concorrência
 
 ---
 
-#### Use Case #2: Consultoria preparando relatório para cliente
+### 🛡️ Trust Score System (0-100)
 
-**Situação:**
-- Cliente: Montadora de veículos
-- Projeto: "Estratégia de eletrificação no Brasil"
-- Prazo: 4 semanas | Budget: $80,000
-- Equipe: 1 senior ($200/h) + 2 juniors ($100/h)
+Avaliação automática de credibilidade de fontes baseada em:
 
-**Sem PluralView (modelo tradicional):**
+- ✅ **Domínio** (+25 pontos) - .edu, .gov, .org, mídia estabelecida
+- 🔒 **HTTPS** (+5 pontos) - Segurança básica
+- 📅 **Recência** (+15 pontos) - Conteúdo atualizado
+- 📝 **Qualidade** (+15 pontos) - Tamanho, citações, sem clickbait
+- 📌 **Metadata** (+10 pontos) - Autor, fontes identificadas
+- 🚩 **Red Flags** (-20 pontos) - Domínios questionáveis
+
+**Resultado:** 0-100 (categorizado em Alto, Médio, Baixo, Muito Baixo)
+
+**Exemplo:**
 ```
-Research Phase (Semana 1-2):
-├─ Junior 1: Pesquisar políticas governamentais (40h) = $4,000
-├─ Junior 2: Analisar percepção de consumidores (40h) = $4,000
-├─ Senior: Revisar e consolidar (20h) = $4,000
-└─ Total research: 100 horas = $12,000
-
-Problem: 50% do orçamento em research
-Margem do projeto: 60% ($48k lucro)
-```
-
-**Com PluralView:**
-```
-Research Phase (Semana 1):
-├─ Junior 1 usa PluralView:
-│   ├─ "Políticas de incentivo a veículos elétricos no Brasil" → 12s
-│   ├─ "Infraestrutura de carregamento elétrico" → 12s
-│   ├─ "Subsídios governamentais para EVs" → 12s
-│   └─ 50 queries × 12s = 10 minutos (não 40 horas!)
-│
-├─ Junior 2 usa PluralView:
-│   ├─ "Percepção pública sobre carros elétricos" → 12s
-│   ├─ "Preocupações de consumidores com EVs" → 12s
-│   ├─ "Comparação: EVs vs híbridos no Brasil" → 12s
-│   └─ 50 queries × 12s = 10 minutos
-│
-├─ Juniors agora fazem análise profunda (não research básico): 20h cada = $4,000
-├─ Senior consolida (10h) = $2,000
-└─ Total research: 50 horas = $6,000
-
-Economia: $6,000 (50% do tempo de research)
-Nova margem: 72.5% ($58k lucro)
-Custo PluralView: 100 queries × $0.02 = $2
+Fonte: "Relatório do IBGE sobre economia"
+├─ Domínio: .gov.br (+25)
+├─ HTTPS: Sim (+5)
+├─ Recência: 2 meses atrás (+15)
+├─ Qualidade: Alta (+15)
+├─ Metadata: Completa (+10)
+└─ Trust Score: 95/100 (ALTO) ✅
 ```
 
-**ROI para consultoria:** $10,000 economizados por projeto | Margem aumentou 12.5%
+---
 
-**ROI para cliente:** Relatório entregue em 3 semanas (não 4) | Qualidade superior (fontes verificadas)
+### 🎭 Detecção Automática de Vieses
+
+Sistema identifica **5 tipos de vieses**:
+
+1. **🎭 Vieses ideológicos ou políticos** - Esquerda/direita, partidarismo
+2. **💰 Conflitos de interesse** - Financiamento, patrocínio
+3. **📊 Limitações metodológicas** - Amostras pequenas, dados selecionados
+4. **👥 Perspectivas sub-representadas** - Vozes ausentes
+5. **💭 Suposições não questionadas** - Premissas implícitas
+
+**Exemplo:**
+```
+Perspectiva Institucional:
+"Governo anuncia redução de 20% no desmatamento..."
+
+Vieses detectados:
+├─ Viés institucional: Foco em aspectos positivos da política governamental
+├─ Perspectiva sub-representada: Comunidades indígenas não consultadas
+└─ Suposição não questionada: Dados de desmatamento são precisos
+```
+
+---
+
+### 📊 Comparação de Perspectivas
+
+Compare até 6 perspectivas lado a lado:
+
+- **Pontos em Comum** - Consenso entre perspectivas
+- **Divergências Principais** - Onde discordam
+- **Contradições Diretas** - Afirmações opostas
+- **Síntese Integrada** - Visão holística
 
 ---
 
@@ -137,14 +335,14 @@ Custo PluralView: 100 queries × $0.02 = $2
 
 - Node.js 18+
 - npm ou yarn
-- Conta no Supabase
+- Conta no Supabase (grátis)
 - API Keys: Anthropic Claude, OpenAI, Tavily
 
 ### Instalação
 
 ```bash
 # Clone o repositório
-git clone [seu-repo-url]
+git clone https://github.com/seu-usuario/pluralview-mvp
 cd pluralview-mvp
 
 # Instale dependências
@@ -194,60 +392,7 @@ supabase/api_costs_schema_FINAL.sql
 
 ---
 
-## 🚀 Funcionalidades
-
-### Análise Multi-Perspectiva
-
-Digite qualquer tópico e receba análises de 6 ângulos diferentes:
-
-```
-Input: "Inteligência Artificial na educação"
-Output:
-├── 6 perspectivas detalhadas (200-300 palavras cada)
-├── Detecção de vieses em cada perspectiva
-├── Trust Score das fontes (0-100)
-├── 5 perguntas reflexivas
-└── Opção de comparar perspectivas
-```
-
-### Trust Score System
-
-Avaliação de credibilidade de fontes baseada em:
-
-- ✅ **Domínio** (+25 pontos) - .edu, .gov, mídia confiável
-- 🔒 **HTTPS** (+5 pontos) - Segurança
-- 📅 **Recência** (+15 pontos) - Conteúdo atualizado
-- 📝 **Qualidade** (+15 pontos) - Tamanho, citações, sem clickbait
-- 📌 **Metadata** (+10 pontos) - Autor, fontes identificadas
-
-**Resultado:** 0-100 (categorizado em Alto, Médio, Baixo, Muito Baixo)
-
-### Detecção de Vieses
-
-Sistema automático identifica:
-
-1. 🎭 Vieses ideológicos ou políticos
-2. 💰 Conflitos de interesse (financiamento)
-3. 📊 Limitações metodológicas
-4. 👥 Perspectivas sub-representadas
-5. 💭 Suposições não questionadas
-
-### Dashboard de Custos
-
-Monitore gastos em tempo real:
-
-**URL:** `/admin/costs`
-
-**Recursos:**
-- 📊 Custo por modelo (Claude, GPT)
-- ⚙️ Custo por operação
-- 📈 Evolução temporal
-- 🔥 Análises mais caras
-- 🔄 Comparação com período anterior
-
----
-
-## 💰 Custos (Otimizado para AI Brasil)
+## 💰 Custos
 
 ### Modelos de IA Atuais
 
@@ -273,90 +418,21 @@ Por análise completa (6 perspectivas):
 ├── Claude Haiku (6x):    ~$0.0161 (94%)
 ├── GPT-4o-mini (8x):     ~$0.0004 (2.3%)
 ├── Tavily (busca web):   ~$0.0006 (3.5%)
-└── Total:                ~$0.0171
+└── Total:                ~$0.0171 (R$ 0,09)
 
 Tempo médio: 12 segundos
 ```
 
-### Projeções
+### Projeções de Uso
 
-| Uso | Custo/Mês | Observação |
-|-----|-----------|------------|
-| 100 análises | $1.71 | Teste/desenvolvimento |
-| 500 análises | $8.55 | Uso moderado |
-| 1000 análises | $17.10 | Uso intenso |
-| AI Brasil (150) | **$2.57** | **Evento** ✅ |
+| Perfil | Análises/Mês | Custo/Mês | Observação |
+|--------|--------------|-----------|------------|
+| **Jornalista** | 200 | R$ 18 | ~10 matérias/mês |
+| **Pesquisador** | 100 | R$ 9 | Pesquisa de mestrado |
+| **Think Tank** | 500 | R$ 45 | Múltiplos relatórios |
+| **Gestão de Crise** | 1000 | R$ 90 | Monitoramento diário |
 
-**Redução de 74% em custos** vs versão anterior (Claude Sonnet 4 + GPT-3.5)
-
-> 📖 **Ver análise completa:** [OTIMIZACAO_CUSTOS_AI_BRASIL.md](OTIMIZACAO_CUSTOS_AI_BRASIL.md)
-
----
-
-## 🛡️ Segurança
-
-### Proteções Implementadas
-
-- ✅ **Rate Limiting:** 5 análises/min por IP
-- ✅ **Input Validation:** Zod schemas
-- ✅ **Sanitização:** Remoção de caracteres perigosos
-- ✅ **Headers de Segurança:** CSP, HSTS, XSS Protection
-- ✅ **RLS no Supabase:** Row Level Security ativo
-- ✅ **Timeout:** 30s para todas as requisições
-
-### Headers Configurados
-
-```javascript
-X-DNS-Prefetch-Control: on
-Strict-Transport-Security: max-age=63072000
-X-Frame-Options: DENY
-X-Content-Type-Options: nosniff
-X-XSS-Protection: 1; mode=block
-Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=()
-```
-
----
-
-## 📁 Estrutura do Projeto
-
-```
-pluralview-mvp/
-├── src/
-│   ├── pages/
-│   │   ├── index.js                    # App principal (1,010 linhas)
-│   │   ├── api/
-│   │   │   ├── analyze.js              # API principal (697 linhas)
-│   │   │   ├── compare-perspectives.js # Comparação de perspectivas
-│   │   │   ├── cost-stats.js           # Estatísticas de custos
-│   │   │   └── feedback-source.js      # Feedback de usuários
-│   │   └── admin/
-│   │       └── costs.js                # Dashboard de custos
-│   ├── lib/
-│   │   ├── costLogger.js               # Tracking de custos
-│   │   ├── trustScoreCalculator.js     # Cálculo de confiabilidade
-│   │   ├── temporalDetector.js         # Detecção temporal de queries
-│   │   ├── validation.js               # Schemas de validação
-│   │   ├── rateLimit.js                # Rate limiting
-│   │   └── auth.js                     # Autenticação (opcional)
-│   ├── components/
-│   │   └── SEO.js
-│   └── styles/
-│       └── globals.css
-├── public/
-│   ├── robots.txt
-│   ├── sitemap.xml
-│   └── og-image.png
-├── supabase/
-│   └── api_costs_schema_FINAL.sql      # Schema do banco
-├── .env.example
-├── .env.local                           # Suas credenciais (não commitar!)
-├── next.config.js
-├── tailwind.config.js
-├── package.json
-├── README.md                            # Este arquivo
-└── OTIMIZACAO_CUSTOS_AI_BRASIL.md      # Documentação técnica completa
-```
+**Redução de 74% em custos** vs versão anterior
 
 ---
 
@@ -381,6 +457,45 @@ pluralview-mvp/
 
 ---
 
+## 📁 Estrutura do Projeto
+
+```
+pluralview-mvp/
+├── src/
+│   ├── pages/
+│   │   ├── index.js                    # App principal (1,010 linhas)
+│   │   ├── api/
+│   │   │   ├── analyze.js              # API principal (734 linhas)
+│   │   │   ├── compare-perspectives.js # Comparação de perspectivas
+│   │   │   ├── cost-stats.js           # Estatísticas de custos
+│   │   │   └── feedback-source.js      # Feedback de usuários
+│   │   └── admin/
+│   │       └── costs.js                # Dashboard de custos
+│   ├── lib/
+│   │   ├── costLogger.js               # Tracking de custos
+│   │   ├── trustScoreCalculator.js     # Cálculo de confiabilidade
+│   │   ├── temporalDetector.js         # Detecção temporal de queries
+│   │   ├── validation.js               # Schemas de validação
+│   │   ├── rateLimit.js                # Rate limiting
+│   │   └── auth.js                     # Autenticação (opcional)
+│   ├── components/
+│   │   └── SEO.js
+│   └── styles/
+│       └── globals.css
+├── public/
+│   ├── robots.txt
+│   ├── sitemap.xml
+│   └── og-image.png
+├── supabase/
+│   └── api_costs_schema_FINAL.sql      # Schema do banco
+├── .env.example
+├── next.config.js
+├── tailwind.config.js
+└── package.json
+```
+
+---
+
 ## 📊 APIs Utilizadas
 
 ### API Principal: `/api/analyze`
@@ -388,7 +503,7 @@ pluralview-mvp/
 **Input:**
 ```json
 {
-  "topic": "Mudanças climáticas"
+  "topic": "Desinformação em eleições"
 }
 ```
 
@@ -408,7 +523,8 @@ pluralview-mvp/
           "url": "https://...",
           "type": "academico",
           "trustScore": 85,
-          "trustLevel": "high"
+          "trustLevel": "high",
+          "trustFactors": {...}
         }
       ]
     }
@@ -416,8 +532,7 @@ pluralview-mvp/
   ],
   "questions": [
     "Pergunta reflexiva 1?",
-    "Pergunta reflexiva 2?"
-    // ... mais 3 perguntas
+    // ... mais 4 perguntas
   ]
 }
 ```
@@ -430,31 +545,16 @@ pluralview-mvp/
 
 ---
 
-## 🧪 Teste Comparativo (Antes vs Depois)
+## 🛡️ Segurança
 
-### Modelos Testados
+### Proteções Implementadas
 
-**ANTES (versão antiga):**
-- Claude Sonnet 4
-- GPT-3.5-turbo
-
-**DEPOIS (versão otimizada):**
-- Claude 3.5 Haiku
-- GPT-4o-mini
-
-### Resultados
-
-| Métrica | Antes | Depois | Melhoria |
-|---------|-------|--------|----------|
-| Custo/análise | $0.0667 | $0.0171 | **-74.4%** 🔥 |
-| Tempo | 24s | 12s | **-50%** ⚡ |
-| Tamanho texto | 1,139 chars | 1,278 chars | **+12%** ✅ |
-| Vieses detectados | 3 | 3 | **=** |
-| Qualidade | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | **Mantida** ✅ |
-
-**Conclusão:** Economia massiva sem perda de qualidade!
-
-> 📊 **Ver análise detalhada:** [OTIMIZACAO_CUSTOS_AI_BRASIL.md](OTIMIZACAO_CUSTOS_AI_BRASIL.md#teste-comparativo)
+- ✅ **Rate Limiting:** 5 análises/min por IP
+- ✅ **Input Validation:** Zod schemas
+- ✅ **Sanitização:** Remoção de caracteres perigosos
+- ✅ **Headers de Segurança:** CSP, HSTS, XSS Protection
+- ✅ **RLS no Supabase:** Row Level Security ativo
+- ✅ **Timeout:** 30s para todas as requisições
 
 ---
 
@@ -471,11 +571,6 @@ pluralview-mvp/
 # Via CLI
 vercel --prod
 ```
-
-### Variáveis de Ambiente na Vercel
-
-Configure todas as variáveis do `.env.local` no dashboard da Vercel:
-- Project Settings → Environment Variables
 
 ---
 
@@ -522,7 +617,7 @@ npm run lint
 ### Adicionar Nova Perspectiva
 
 1. Edite `src/pages/api/analyze.js`
-2. Adicione novo tipo em `perspectiveTypes` (linha ~511)
+2. Adicione novo tipo em `perspectiveTypes` (linha ~548)
 3. Ajuste prompts conforme necessário
 4. Teste localmente
 
@@ -543,23 +638,6 @@ Edite `src/lib/trustScoreCalculator.js`:
 - **[Bias Detection](BIAS_DETECTION_IMPLEMENTATION.md)** - Detecção de vieses
 - **[Temporal Query System](TEMPORAL_QUERY_SYSTEM.md)** - Queries temporais
 - **[Security Improvements](SECURITY_IMPROVEMENTS.md)** - Melhorias de segurança
-
----
-
-## 🐛 Problemas Conhecidos
-
-### Frontend
-
-- ⚠️ `index.js` muito grande (1,010 linhas) - Precisa refatorar
-- ⚠️ Sem TypeScript - Aumenta risco de bugs
-- ⚠️ Sem testes automatizados
-
-### Backend
-
-- ⚠️ Cache LRU não compartilhado entre serverless functions
-- ⚠️ Sem retry logic para chamadas de API
-
-> 📌 **Roadmap de melhorias:** [OTIMIZACAO_CUSTOS_AI_BRASIL.md#próximos-passos](OTIMIZACAO_CUSTOS_AI_BRASIL.md#próximos-passos)
 
 ---
 
@@ -591,8 +669,8 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 👨‍💻 Autor
 
 **PluralView MVP**
-- Desenvolvido para o AI Brasil 2025
-- Otimizado em 17/10/2025
+- Desenvolvido para profissionais de informação
+- Otimizado para jornalismo, academia e análise de políticas públicas
 
 ---
 
@@ -609,7 +687,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 📞 Suporte
 
 - 📧 Email: [seu-email]
-- 🐛 Issues: [GitHub Issues](link)
+- 🐛 Issues: [GitHub Issues](https://github.com/seu-usuario/pluralview-mvp/issues)
 - 📖 Docs: [Ver documentação completa](OTIMIZACAO_CUSTOS_AI_BRASIL.md)
 
 ---
@@ -626,7 +704,9 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 <div align="center">
 
-**Transformando research de horas em insights de segundos - Business Intelligence para o mundo real**
+**Transformando horas de research em segundos de insight**
+
+**Agregação inteligente • Detecção de vieses • Mapeamento de narrativas**
 
 [⬆ Voltar ao topo](#-pluralview-mvp)
 
