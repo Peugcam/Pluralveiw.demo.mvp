@@ -1,3 +1,5 @@
+import type { Source, TrustScore, TrustLevel, TrustScoreFactors } from '@/types';
+
 /**
  * Trust Score Calculator
  * Calcula a confiabilidade de fontes baseado em múltiplos fatores
@@ -9,7 +11,37 @@
  * - 0-39: Baixa confiabilidade (vermelho)
  */
 
+interface ScoreResult {
+  points: number;
+  factor: string | null;
+}
+
+interface ContentScoreResult {
+  points: number;
+  factors: string[];
+}
+
+interface MetadataScoreResult {
+  points: number;
+  factors: string[];
+}
+
+interface ScoreDetails {
+  label: string;
+  description: string;
+  color: string;
+}
+
+interface ExtendedSource extends Source {
+  author?: string;
+  content?: string;
+}
+
 export class TrustScoreCalculator {
+  private trustedDomains: string[];
+  private reliableMedia: string[];
+  private suspiciousDomains: string[];
+
   constructor() {
     // Domínios altamente confiáveis
     this.trustedDomains = [
@@ -48,51 +80,63 @@ export class TrustScoreCalculator {
 
   /**
    * Calcula o trust score de uma fonte
-   * @param {Object} source - Objeto da fonte com url, title, content, etc.
-   * @returns {Object} - { score, factors, level }
+   * @param source - Objeto da fonte com url, title, content, etc.
+   * @returns Score com fatores e nível
    */
-  calculate(source) {
+  calculate(source: ExtendedSource): TrustScore {
     if (!source || !source.url) {
       return {
         score: 0,
-        level: 'unknown',
-        factors: ['URL ausente']
+        level: 'low' as TrustLevel,
+        factors: {
+          domainType: 0,
+          httpsBonus: 0,
+          recencyBonus: 0,
+          contentQuality: 0,
+          metadataBonus: 0,
+          redFlagPenalty: 0
+        }
       };
     }
 
     let score = 50; // Score base
-    const factors = [];
+    const factors: TrustScoreFactors = {
+      domainType: 0,
+      httpsBonus: 0,
+      recencyBonus: 0,
+      contentQuality: 0,
+      metadataBonus: 0,
+      redFlagPenalty: 0
+    };
 
     // Fator 1: Domínio confiável (+30 pontos máximo)
     const domainScore = this.evaluateDomain(source.url);
     score += domainScore.points;
-    if (domainScore.factor) factors.push(domainScore.factor);
+    factors.domainType = domainScore.points;
 
     // Fator 2: HTTPS (+5 pontos)
     if (source.url.startsWith('https://')) {
       score += 5;
-      factors.push('✅ Conexão segura (HTTPS)');
+      factors.httpsBonus = 5;
     } else {
       score -= 5;
-      factors.push('⚠️ Sem HTTPS');
+      factors.httpsBonus = -5;
     }
 
     // Fator 3: Data de publicação (+15 pontos se recente)
     const dateScore = this.evaluatePublicationDate(source.published_date);
     score += dateScore.points;
-    if (dateScore.factor) factors.push(dateScore.factor);
+    factors.recencyBonus = dateScore.points;
 
     // Fator 4: Qualidade do conteúdo (+15 pontos)
     const contentScore = this.evaluateContent(source.content, source.title);
     score += contentScore.points;
-    factors.push(...contentScore.factors);
+    factors.contentQuality = contentScore.points;
 
     // Fator 5: Metadados (autor, fontes citadas) (+10 pontos)
     const metadataScore = this.evaluateMetadata(source);
     score += metadataScore.points;
-    if (metadataScore.factors.length > 0) {
-      factors.push(...metadataScore.factors);
-    }
+    factors.metadataBonus = metadataScore.points;
 
     // Limitar score entre 0 e 100
     score = Math.max(0, Math.min(100, score));
@@ -100,15 +144,14 @@ export class TrustScoreCalculator {
     return {
       score: Math.round(score),
       level: this.getScoreLevel(score),
-      factors,
-      details: this.getScoreDetails(score)
+      factors
     };
   }
 
   /**
    * Avalia a confiabilidade do domínio
    */
-  evaluateDomain(url) {
+  private evaluateDomain(url: string): ScoreResult {
     const urlLower = url.toLowerCase();
 
     // Check red flags primeiro
@@ -147,7 +190,7 @@ export class TrustScoreCalculator {
   /**
    * Avalia a data de publicação
    */
-  evaluatePublicationDate(publishedDate) {
+  private evaluatePublicationDate(publishedDate?: string): ScoreResult {
     if (!publishedDate) {
       return { points: -5, factor: '⚠️ Data de publicação não disponível' };
     }
@@ -155,7 +198,7 @@ export class TrustScoreCalculator {
     try {
       const pubDate = new Date(publishedDate);
       const now = new Date();
-      const diffDays = Math.floor((now - pubDate) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60 * 24));
 
       if (diffDays < 0) {
         return { points: -10, factor: '⚠️ Data futura (inconsistente)' };
@@ -182,8 +225,8 @@ export class TrustScoreCalculator {
   /**
    * Avalia a qualidade do conteúdo
    */
-  evaluateContent(content, title) {
-    const factors = [];
+  private evaluateContent(content?: string, title?: string): ContentScoreResult {
+    const factors: string[] = [];
     let points = 0;
 
     if (!content || content.length < 100) {
@@ -233,8 +276,8 @@ export class TrustScoreCalculator {
   /**
    * Avalia metadados (autor, fontes, etc)
    */
-  evaluateMetadata(source) {
-    const factors = [];
+  private evaluateMetadata(source: ExtendedSource): MetadataScoreResult {
+    const factors: string[] = [];
     let points = 0;
 
     // Check se tem autor identificado
@@ -256,17 +299,17 @@ export class TrustScoreCalculator {
   /**
    * Retorna o nível do score
    */
-  getScoreLevel(score) {
+  private getScoreLevel(score: number): TrustLevel {
     if (score >= 80) return 'high';
     if (score >= 60) return 'medium';
-    if (score >= 40) return 'low';
-    return 'very-low';
+    if (score >= 40) return 'low-medium';
+    return 'low';
   }
 
   /**
    * Retorna detalhes descritivos do score
    */
-  getScoreDetails(score) {
+  getScoreDetails(score: number): ScoreDetails {
     if (score >= 80) {
       return {
         label: 'Altamente Confiável',
@@ -298,7 +341,7 @@ export class TrustScoreCalculator {
   /**
    * Calcula média de trust score de múltiplas fontes
    */
-  calculateAverage(sources) {
+  calculateAverage(sources: Source[]): number {
     if (!sources || sources.length === 0) return 0;
 
     const scores = sources.map(s => this.calculate(s).score);
@@ -310,7 +353,7 @@ export class TrustScoreCalculator {
   /**
    * Filtra fontes por trust score mínimo
    */
-  filterByMinScore(sources, minScore = 60) {
+  filterByMinScore(sources: Source[], minScore: number = 60): Source[] {
     return sources.filter(source => {
       const { score } = this.calculate(source);
       return score >= minScore;

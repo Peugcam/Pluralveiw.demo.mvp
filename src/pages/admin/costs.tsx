@@ -1,51 +1,77 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
+import type { CostStatsResponse } from '@/types';
+
+type Period = '24h' | '7d' | '30d' | '90d';
+
+interface PeriodOption {
+  value: Period;
+  label: string;
+}
+
+const operationLabels: Record<string, string> = {
+  perspective_analysis: 'Análise de Perspectivas',
+  perspective_generation: 'Geração de Perspectivas',
+  filter_sources: 'Filtro de Fontes',
+  source_filtering: 'Filtro de Fontes',
+  validate_alignment: 'Validação de Alinhamento',
+  bias_detection: 'Detecção de Vieses',
+  reflective_questions: 'Perguntas Reflexivas',
+  question_generation: 'Geração de Perguntas'
+};
 
 export default function CostsDashboard() {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [period, setPeriod] = useState('7d')
+  const [stats, setStats] = useState<CostStatsResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<Period>('7d');
 
   useEffect(() => {
-    fetchStats()
-  }, [period])
+    fetchStats();
+  }, [period]);
 
   const fetchStats = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch(`/api/cost-stats?period=${period}`)
-      const data = await response.json()
+      const response = await fetch(`/api/cost-stats?period=${period}`);
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao buscar estatísticas')
+        throw new Error(data.error || 'Erro ao buscar estatísticas');
       }
 
-      setStats(data)
+      setStats(data);
     } catch (err) {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const formatCurrency = (value) => {
+  const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 4
-    }).format(value)
-  }
+    }).format(value);
+  };
 
-  const formatNumber = (value) => {
-    return new Intl.NumberFormat('en-US').format(value)
-  }
+  const formatNumber = (value: number): string => {
+    return new Intl.NumberFormat('en-US').format(value);
+  };
 
-  const formatPercent = (value) => {
-    const sign = value > 0 ? '+' : ''
-    return `${sign}${value.toFixed(1)}%`
-  }
+  const formatPercent = (value: number): string => {
+    const sign = value > 0 ? '+' : '';
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
+  const periodOptions: PeriodOption[] = [
+    { value: '24h', label: 'Últimas 24h' },
+    { value: '7d', label: 'Últimos 7 dias' },
+    { value: '30d', label: 'Últimos 30 dias' },
+    { value: '90d', label: 'Últimos 90 dias' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-dark to-gray-900 p-8">
@@ -58,12 +84,7 @@ export default function CostsDashboard() {
 
         {/* Period Selector */}
         <div className="mb-6 flex gap-2">
-          {[
-            { value: '24h', label: 'Últimas 24h' },
-            { value: '7d', label: 'Últimos 7 dias' },
-            { value: '30d', label: 'Últimos 30 dias' },
-            { value: '90d', label: 'Últimos 90 dias' }
-          ].map(p => (
+          {periodOptions.map(p => (
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
@@ -98,43 +119,38 @@ export default function CostsDashboard() {
               <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
                 <div className="text-sm text-blue-300 mb-1">Custo Total</div>
                 <div className="text-3xl font-bold text-white mb-2">
-                  {formatCurrency(stats.summary.totalCost)}
+                  {formatCurrency(stats.totalCost)}
                 </div>
-                {stats.comparison.costChangePercent !== 0 && (
-                  <div className={`text-xs ${stats.comparison.costChangePercent > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                    {formatPercent(stats.comparison.costChangePercent)} vs período anterior
+                {stats.trend && stats.trend.change !== 0 && (
+                  <div className={`text-xs ${stats.trend.change > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    {formatPercent(stats.trend.change)} vs período anterior
                   </div>
                 )}
               </div>
 
               <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-purple-500/30 rounded-lg p-6">
-                <div className="text-sm text-purple-300 mb-1">Total de Tokens</div>
+                <div className="text-sm text-purple-300 mb-1">Total de Requisições</div>
                 <div className="text-3xl font-bold text-white mb-2">
-                  {formatNumber(stats.summary.totalTokens)}
+                  {formatNumber(stats.totalRequests)}
                 </div>
-                {stats.comparison.tokensChangePercent !== 0 && (
-                  <div className={`text-xs ${stats.comparison.tokensChangePercent > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                    {formatPercent(stats.comparison.tokensChangePercent)} vs período anterior
-                  </div>
-                )}
               </div>
 
               <div className="bg-gradient-to-br from-green-900/40 to-green-800/20 border border-green-500/30 rounded-lg p-6">
-                <div className="text-sm text-green-300 mb-1">Operações</div>
+                <div className="text-sm text-green-300 mb-1">Custo Médio</div>
                 <div className="text-3xl font-bold text-white mb-2">
-                  {formatNumber(stats.summary.totalOperations)}
+                  {formatCurrency(stats.averageCostPerRequest)}
                 </div>
-                <div className="text-xs text-gray-400">
-                  Média: {formatCurrency(stats.summary.avgCostPerOperation)} / operação
-                </div>
+                <div className="text-xs text-gray-400">por operação</div>
               </div>
 
               <div className="bg-gradient-to-br from-orange-900/40 to-orange-800/20 border border-orange-500/30 rounded-lg p-6">
-                <div className="text-sm text-orange-300 mb-1">Tokens Médios</div>
+                <div className="text-sm text-orange-300 mb-1">Tendência</div>
                 <div className="text-3xl font-bold text-white mb-2">
-                  {formatNumber(stats.summary.avgTokensPerOperation)}
+                  {stats.trend?.direction === 'up' ? '📈' : stats.trend?.direction === 'down' ? '📉' : '➡️'}
                 </div>
-                <div className="text-xs text-gray-400">por operação</div>
+                <div className="text-xs text-gray-400">
+                  {stats.trend?.direction === 'up' ? 'Aumentando' : stats.trend?.direction === 'down' ? 'Diminuindo' : 'Estável'}
+                </div>
               </div>
             </div>
 
@@ -144,13 +160,13 @@ export default function CostsDashboard() {
               <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
                 <h3 className="text-xl font-bold text-white mb-4">💡 Custo por Modelo</h3>
                 <div className="space-y-3">
-                  {stats.costByModel.map((item) => {
-                    const percentage = (item.cost / stats.summary.totalCost) * 100
+                  {stats.byModel.map((item) => {
+                    const percentage = (item.totalCost / stats.totalCost) * 100;
                     return (
                       <div key={item.model}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-300">{item.model}</span>
-                          <span className="text-white font-semibold">{formatCurrency(item.cost)}</span>
+                          <span className="text-white font-semibold">{formatCurrency(item.totalCost)}</span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2">
                           <div
@@ -159,10 +175,10 @@ export default function CostsDashboard() {
                           ></div>
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {item.operations} operações • {formatNumber(item.tokens)} tokens
+                          {item.requests} operações • {item.percentage.toFixed(1)}% do total
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -171,19 +187,13 @@ export default function CostsDashboard() {
               <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
                 <h3 className="text-xl font-bold text-white mb-4">⚙️ Custo por Operação</h3>
                 <div className="space-y-3">
-                  {stats.costByOperation.map((item) => {
-                    const percentage = (item.cost / stats.summary.totalCost) * 100
-                    const labels = {
-                      perspective_analysis: 'Análise de Perspectivas',
-                      filter_sources: 'Filtro de Fontes',
-                      validate_alignment: 'Validação de Alinhamento',
-                      reflective_questions: 'Perguntas Reflexivas'
-                    }
+                  {stats.byOperation.map((item) => {
+                    const percentage = (item.totalCost / stats.totalCost) * 100;
                     return (
                       <div key={item.operation}>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-300">{labels[item.operation] || item.operation}</span>
-                          <span className="text-white font-semibold">{formatCurrency(item.cost)}</span>
+                          <span className="text-gray-300">{operationLabels[item.operation] || item.operation}</span>
+                          <span className="text-white font-semibold">{formatCurrency(item.totalCost)}</span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2">
                           <div
@@ -192,44 +202,17 @@ export default function CostsDashboard() {
                           ></div>
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {item.operations} operações • {formatNumber(item.tokens)} tokens
+                          {item.requests} operações
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
             </div>
 
-            {/* Time Series */}
-            <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 mb-8">
-              <h3 className="text-xl font-bold text-white mb-4">📊 Evolução de Custos</h3>
-              <div className="h-64 flex items-end justify-between gap-1">
-                {stats.timeSeries.map((point, idx) => {
-                  const maxCost = Math.max(...stats.timeSeries.map(p => p.cost))
-                  const height = maxCost > 0 ? (point.cost / maxCost) * 100 : 0
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center group">
-                      <div
-                        className="w-full bg-gradient-to-t from-primary to-secondary rounded-t hover:opacity-80 transition-opacity relative"
-                        style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
-                      >
-                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                          {formatCurrency(point.cost)}<br/>
-                          {point.operations} ops
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-top-left">
-                        {new Date(point.date).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
             {/* Top Expensive Analyses */}
-            {stats.topExpensiveAnalyses.length > 0 && (
+            {stats.topAnalyses && stats.topAnalyses.length > 0 && (
               <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
                 <h3 className="text-xl font-bold text-white mb-4">🔥 Análises Mais Caras</h3>
                 <div className="overflow-x-auto">
@@ -238,18 +221,20 @@ export default function CostsDashboard() {
                       <tr className="text-left text-sm text-gray-400 border-b border-gray-700">
                         <th className="pb-3">#</th>
                         <th className="pb-3">Tópico</th>
-                        <th className="pb-3 text-right">Operações</th>
                         <th className="pb-3 text-right">Custo</th>
+                        <th className="pb-3 text-right">Data</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.topExpensiveAnalyses.map((analysis, idx) => (
-                        <tr key={analysis.analysisId} className="border-b border-gray-700/50">
+                      {stats.topAnalyses.map((analysis, idx) => (
+                        <tr key={analysis.id} className="border-b border-gray-700/50">
                           <td className="py-3 text-gray-500">{idx + 1}</td>
                           <td className="py-3 text-gray-300">{analysis.topic}</td>
-                          <td className="py-3 text-right text-gray-400">{analysis.operations}</td>
                           <td className="py-3 text-right text-white font-semibold">
                             {formatCurrency(analysis.cost)}
+                          </td>
+                          <td className="py-3 text-right text-gray-400">
+                            {new Date(analysis.date).toLocaleDateString('pt-BR')}
                           </td>
                         </tr>
                       ))}
@@ -262,5 +247,5 @@ export default function CostsDashboard() {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, ZodSchema } from 'zod';
 
 /**
  * Schemas de validação com Zod
@@ -15,7 +15,7 @@ export const analyzeSchema = z.object({
       (val) => !/[<>{}[\]\\]/g.test(val),
       'Tópico contém caracteres inválidos'
     )
-})
+});
 
 // Schema para comparação de perspectivas
 export const comparePerspectivesSchema = z.object({
@@ -27,7 +27,7 @@ export const comparePerspectivesSchema = z.object({
   ).min(2, 'Mínimo de 2 perspectivas necessárias')
    .max(6, 'Máximo de 6 perspectivas'),
   topic: z.string().min(1).max(500)
-})
+});
 
 // Schema para feedback de fontes
 export const feedbackSourceSchema = z.object({
@@ -42,72 +42,81 @@ export const feedbackSourceSchema = z.object({
   ]),
   sourceUrl: z.string().url('URL inválida').max(2048),
   feedback: z.enum(['relevant', 'not_relevant'])
-})
+});
 
 // Schema para ID de análise
 export const analysisIdSchema = z.object({
   id: z.string().uuid('ID inválido')
-})
+});
+
+/**
+ * Resultado da validação
+ */
+export interface ValidationResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
 /**
  * Helper para validar dados e retornar erro formatado
- * @param {ZodSchema} schema - Schema Zod
- * @param {any} data - Dados a serem validados
- * @returns {Object} { success: boolean, data?: any, error?: string }
+ * @param schema - Schema Zod
+ * @param data - Dados a serem validados
+ * @returns Resultado da validação
  */
-export function validateData(schema, data) {
+export function validateData<T>(schema: ZodSchema<T>, data: unknown): ValidationResult<T> {
   try {
-    const validated = schema.parse(data)
-    return { success: true, data: validated }
+    const validated = schema.parse(data);
+    return { success: true, data: validated };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errors = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
-      return { success: false, error: errors }
+      const errors = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+      return { success: false, error: errors };
     }
-    return { success: false, error: 'Validation error' }
+    return { success: false, error: 'Validation error' };
   }
 }
 
 /**
  * Sanitiza string removendo caracteres perigosos
- * @param {string} str - String a ser sanitizada
- * @returns {string} String sanitizada
+ * @param str - String a ser sanitizada
+ * @returns String sanitizada
  */
-export function sanitizeString(str) {
-  if (typeof str !== 'string') return ''
+export function sanitizeString(str: unknown): string {
+  if (typeof str !== 'string') return '';
 
   return str
     .trim()
     .replace(/[<>]/g, '') // Remove < e >
     .replace(/javascript:/gi, '') // Remove javascript:
     .replace(/on\w+=/gi, '') // Remove event handlers (onclick=, onerror=, etc)
-    .substring(0, 10000) // Limite de tamanho
+    .substring(0, 10000); // Limite de tamanho
 }
 
 /**
  * Sanitiza objeto recursivamente
- * @param {Object} obj - Objeto a ser sanitizado
- * @returns {Object} Objeto sanitizado
+ * @param obj - Objeto a ser sanitizado
+ * @returns Objeto sanitizado
  */
-export function sanitizeObject(obj) {
+export function sanitizeObject<T>(obj: T): T {
   if (typeof obj !== 'object' || obj === null) {
-    return obj
+    return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObject(item))
+    return obj.map(item => sanitizeObject(item)) as T;
   }
 
-  const sanitized = {}
+  const sanitized: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {
-      sanitized[key] = sanitizeString(value)
+      sanitized[key] = sanitizeString(value);
     } else if (typeof value === 'object') {
-      sanitized[key] = sanitizeObject(value)
+      sanitized[key] = sanitizeObject(value);
     } else {
-      sanitized[key] = value
+      sanitized[key] = value;
     }
   }
 
-  return sanitized
+  return sanitized as T;
 }

@@ -1,42 +1,67 @@
-import OpenAI from 'openai'
-import { apiRateLimiter } from '../../lib/rateLimit'
-import { validateData, comparePerspectivesSchema } from '../../lib/validation'
-import { optionalAuth } from '../../lib/auth'
+import OpenAI from 'openai';
+import { apiRateLimiter } from '../../lib/rateLimit';
+import { validateData, comparePerspectivesSchema } from '../../lib/validation';
+import { optionalAuth } from '../../lib/auth';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import type { APIError, ComparePerspectivesResponse } from '@/types';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 30000, // 30 segundos timeout
-})
+});
 
-export default async function handler(req, res) {
+interface ComparisonResult {
+  consensus: string[];
+  divergences: string[];
+  contradictions: string[];
+  synthesis: string;
+}
+
+interface SuccessResponse extends ComparePerspectivesResponse {
+  success: boolean;
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<SuccessResponse | APIError>
+) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return res.status(405).json({ error: 'Method not allowed', statusCode: 405 });
   }
 
   // Rate Limiting
   if (!apiRateLimiter.middleware(req, res)) {
-    return // Rate limit exceeded
+    return; // Rate limit exceeded
   }
 
   // Autenticação opcional
-  await optionalAuth(req)
+  await optionalAuth(req);
 
   try {
     // Validação de input
-    const validation = validateData(comparePerspectivesSchema, req.body)
+    const validation = validateData(comparePerspectivesSchema, req.body);
     if (!validation.success) {
       return res.status(400).json({
         error: 'Validation error',
-        details: validation.error
-      })
+        details: validation.error,
+        statusCode: 400
+      });
     }
 
-    const { perspectives, topic } = validation.data
+    if (!validation.data) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: 'Invalid data',
+        statusCode: 400
+      });
+    }
+
+    const { perspectives, topic } = validation.data;
 
     // Formatar perspectivas para análise
-    const perspectivesText = perspectives.map(p =>
+    const perspectivesText = perspectives.map((p: any) =>
       `[${p.type.toUpperCase()}]\n${p.content}`
-    ).join('\n\n---\n\n')
+    ).join('\n\n---\n\n');
 
     const prompt = `Você é um analista especializado em síntese e comparação de múltiplas perspectivas.
 
@@ -76,9 +101,9 @@ Um parágrafo integrando as perspectivas, destacando a complexidade do tema e co
 IMPORTANTE:
 - Seja específico e cite as perspectivas pelo nome
 - Identifique apenas divergências/contradições REAIS (não invente)
-- Na síntese, busque uma visão equilibrada que honre todas as perspectivas`
+- Na síntese, busque uma visão equilibrada que honre todas as perspectivas`;
 
-    console.log('[Compare] Analisando comparação entre perspectivas...')
+    console.log('[Compare] Analisando comparação entre perspectivas...');
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -94,105 +119,114 @@ IMPORTANTE:
       ],
       temperature: 0.3, // Baixa temperatura para análise mais factual
       max_tokens: 800
-    })
+    });
 
-    const response = completion.choices[0].message.content
+    const response = completion.choices[0].message.content || '';
 
     // Parse da resposta
-    const comparison = parseComparisonResponse(response)
+    const comparison = parseComparisonResponse(response);
 
     console.log('[Compare] Análise concluída:', {
       consensos: comparison.consensus.length,
       divergências: comparison.divergences.length,
       contradições: comparison.contradictions.length
-    })
+    });
 
     res.status(200).json({
       success: true,
-      comparison
-    })
+      comparison: {
+        selectedPerspectives: perspectives.map((p: any) => p.type),
+        consensus: comparison.consensus,
+        divergences: comparison.divergences,
+        contradictions: comparison.contradictions,
+        synthesis: comparison.synthesis
+      }
+    });
 
   } catch (error) {
     // Log de erro sem expor detalhes sensíveis
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error in compare-perspectives API:', error)
+      console.error('Error in compare-perspectives API:', error);
     } else {
-      console.error('Error in compare-perspectives API:', error.message)
+      console.error('Error in compare-perspectives API:', (error as Error).message);
     }
 
     res.status(500).json({
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro ao comparar perspectivas'
-    })
+      details: process.env.NODE_ENV === 'development'
+        ? (error as Error).message
+        : 'Erro ao comparar perspectivas',
+      statusCode: 500
+    });
   }
 }
 
 /**
  * Parse da resposta estruturada da IA
  */
-function parseComparisonResponse(response) {
-  const result = {
+function parseComparisonResponse(response: string): ComparisonResult {
+  const result: ComparisonResult = {
     consensus: [],
     divergences: [],
     contradictions: [],
     synthesis: ''
-  }
+  };
 
   try {
     // Extrair seção de CONSENSOS
     if (response.includes('[CONSENSOS]')) {
-      const consensusSection = extractSection(response, '[CONSENSOS]', '[DIVERGÊNCIAS]')
-      result.consensus = extractListItems(consensusSection)
+      const consensusSection = extractSection(response, '[CONSENSOS]', '[DIVERGÊNCIAS]');
+      result.consensus = extractListItems(consensusSection);
     }
 
     // Extrair seção de DIVERGÊNCIAS
     if (response.includes('[DIVERGÊNCIAS]')) {
-      const divergencesSection = extractSection(response, '[DIVERGÊNCIAS]', '[CONTRADIÇÕES]')
-      result.divergences = extractListItems(divergencesSection)
+      const divergencesSection = extractSection(response, '[DIVERGÊNCIAS]', '[CONTRADIÇÕES]');
+      result.divergences = extractListItems(divergencesSection);
     }
 
     // Extrair seção de CONTRADIÇÕES
     if (response.includes('[CONTRADIÇÕES]')) {
-      const contradictionsSection = extractSection(response, '[CONTRADIÇÕES]', '[SÍNTESE]')
-      result.contradictions = extractListItems(contradictionsSection)
+      const contradictionsSection = extractSection(response, '[CONTRADIÇÕES]', '[SÍNTESE]');
+      result.contradictions = extractListItems(contradictionsSection);
     }
 
     // Extrair SÍNTESE
     if (response.includes('[SÍNTESE]')) {
-      const synthesisStart = response.indexOf('[SÍNTESE]') + '[SÍNTESE]'.length
-      result.synthesis = response.substring(synthesisStart).trim()
+      const synthesisStart = response.indexOf('[SÍNTESE]') + '[SÍNTESE]'.length;
+      result.synthesis = response.substring(synthesisStart).trim();
     }
 
   } catch (error) {
-    console.error('Error parsing comparison response:', error)
+    console.error('Error parsing comparison response:', error);
     // Fallback: retornar resposta bruta
-    result.synthesis = response
+    result.synthesis = response;
   }
 
-  return result
+  return result;
 }
 
 /**
  * Extrai uma seção entre dois marcadores
  */
-function extractSection(text, startMarker, endMarker) {
-  const startIndex = text.indexOf(startMarker) + startMarker.length
-  const endIndex = endMarker ? text.indexOf(endMarker, startIndex) : text.length
+function extractSection(text: string, startMarker: string, endMarker?: string): string {
+  const startIndex = text.indexOf(startMarker) + startMarker.length;
+  const endIndex = endMarker ? text.indexOf(endMarker, startIndex) : text.length;
 
   if (startIndex === -1 || (endMarker && endIndex === -1)) {
-    return ''
+    return '';
   }
 
-  return text.substring(startIndex, endIndex).trim()
+  return text.substring(startIndex, endIndex).trim();
 }
 
 /**
  * Extrai itens de lista (começando com "-")
  */
-function extractListItems(text) {
+function extractListItems(text: string): string[] {
   return text
     .split('\n')
     .filter(line => line.trim().startsWith('-'))
     .map(line => line.trim().substring(1).trim())
-    .filter(item => item.length > 0 && !item.toLowerCase().includes('nenhum'))
+    .filter(item => item.length > 0 && !item.toLowerCase().includes('nenhum'));
 }

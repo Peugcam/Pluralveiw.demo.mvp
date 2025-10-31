@@ -1,14 +1,18 @@
-import Head from 'next/head'
+import Head from 'next/head';
+import type { SEOProps } from '@/types';
 
 export default function SEO({
   title = 'PluralView - Análise Inteligente de Múltiplas Perspectivas',
   description = 'Obtenha análises completas e imparciais sobre qualquer tema através de 6 perspectivas diferentes: técnica, popular, institucional, acadêmica, conservadora e progressista. Use IA para explorar todos os ângulos de um assunto.',
-  url = 'https://pluralview-mvp.vercel.app',
-  image = 'https://pluralview-mvp.vercel.app/og-image.png',
-  type = 'website',
-  locale = 'pt_BR',
-  siteName = 'PluralView'
-}) {
+  canonical = 'https://pluralview-mvp.vercel.app',
+  ogImage = 'https://pluralview-mvp.vercel.app/og-image.png'
+}: SEOProps) {
+  const url = canonical;
+  const image = ogImage;
+  const type = 'website';
+  const locale = 'pt_BR';
+  const siteName = 'PluralView';
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -55,7 +59,7 @@ export default function SEO({
       bestRating: '5',
       worstRating: '1'
     }
-  }
+  };
 
   const breadcrumbData = {
     '@context': 'https://schema.org',
@@ -68,7 +72,7 @@ export default function SEO({
         item: 'https://pluralview-mvp.vercel.app'
       }
     ]
-  }
+  };
 
   return (
     <Head>
@@ -164,5 +168,5 @@ export default function SEO({
       <meta name="MobileOptimized" content="320" />
       <meta name="format-detection" content="telephone=no" />
     </Head>
-  )
+  );
 }
