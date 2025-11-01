@@ -57,6 +57,7 @@ interface GeneratePerspectiveParams {
 interface BiasItem {
   type: 'ideological' | 'conflict_of_interest' | 'methodological' | 'representation' | 'assumption';
   description: string;
+  severity: 'low' | 'medium' | 'high';
 }
 
 /**
@@ -125,7 +126,7 @@ Seu texto de 2-3 parágrafos aqui...
       ]
     });
 
-    const generatedContent = response.content[0].text;
+    const generatedContent = (response.content[0] as any).text;
 
     // 💰 LOG de custo com informação de cache
     if (analysisId) {
@@ -163,9 +164,9 @@ Seu texto de 2-3 parágrafos aqui...
       // Extrair vieses da lista
       biases = biasesText
         .split('\n')
-        .filter(line => line.trim().startsWith('-'))
-        .map(line => line.trim().substring(1).trim())
-        .filter(bias => bias.length > 0);
+        .filter((line: string) => line.trim().startsWith('-'))
+        .map((line: string) => line.trim().substring(1).trim())
+        .filter((bias: string) => bias.length > 0);
 
       // Log de vieses detectados
       if (biases.length > 0 && !biases[0].toLowerCase().includes('nenhum')) {
@@ -205,7 +206,7 @@ export async function generatePerspectiveStructured({
     name: 'generate_perspective',
     description: 'Generate a multi-perspective analysis with bias detection',
     input_schema: {
-      type: 'object',
+      type: 'object' as const,
       properties: {
         analysis: {
           type: 'string',
@@ -304,7 +305,7 @@ REQUIREMENTS:
     });
 
     // Extrair structured output
-    const toolUse = response.content.find(c => c.type === 'tool_use') as any;
+    const toolUse: any = response.content.find(c => c.type === 'tool_use');
 
     if (!toolUse) {
       throw new Error('No tool use in response');

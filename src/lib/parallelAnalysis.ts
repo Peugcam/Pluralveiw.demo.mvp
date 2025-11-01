@@ -35,7 +35,7 @@ interface GeneratePerspectivesParams {
 
 const PERSPECTIVE_CONFIGS: PerspectiveConfig[] = [
   {
-    type: 'tecnica',
+    type: 'technical',
     name: 'Técnica',
     focus: 'aspectos técnicos, dados, evidências científicas'
   },
@@ -45,22 +45,22 @@ const PERSPECTIVE_CONFIGS: PerspectiveConfig[] = [
     focus: 'senso comum, impacto no dia a dia das pessoas'
   },
   {
-    type: 'institucional',
+    type: 'institutional',
     name: 'Institucional',
     focus: 'posição de instituições, órgãos oficiais, governos'
   },
   {
-    type: 'academica',
+    type: 'academic',
     name: 'Acadêmica',
     focus: 'teorias, pesquisas, visão científica e universitária'
   },
   {
-    type: 'conservadora',
+    type: 'conservative',
     name: 'Conservadora',
     focus: 'tradição, valores conservadores, cautela com mudanças'
   },
   {
-    type: 'progressista',
+    type: 'progressive',
     name: 'Progressista',
     focus: 'mudança social, inovação, justiça e equidade'
   }
