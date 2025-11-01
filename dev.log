@@ -1,0 +1,21 @@
+
+> pluralview-mvp@1.0.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+ ⚠ Port 3001 is in use, trying 3002 instead.
+ ⚠ Port 3002 is in use, trying 3003 instead.
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3003
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 10.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 18.8s (284 modules)
+ ✓ Compiled in 2.3s (284 modules)
+ GET / 200 in 21970ms
+ ✓ Compiled in 2.6s (264 modules)
+ ✓ Compiled in 885ms (213 modules)
+ ✓ Compiled in 4.5s (264 modules)
+ ✓ Compiled in 1289ms (264 modules)
